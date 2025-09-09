@@ -47,11 +47,6 @@ namespace OhLivrosApp.Models
         public Estados Estado { get; set; }
 
         /// <summary>
-        /// Lista de detalhes associados à encomenda
-        /// </summary>
-        public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
-
-        /// <summary>
         /// Estado do pagamento (texto calculado, não mapeado na BD)
         /// </summary>
         [NotMapped]
@@ -71,6 +66,10 @@ namespace OhLivrosApp.Models
         [ValidateNever]
         public Utilizador Comprador { get; set; } = null!;
 
+        /// <summary>
+        /// Lista de detalhes associados à encomenda
+        /// </summary>
+        public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
     }
 
     public enum Estados

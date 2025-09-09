@@ -54,5 +54,16 @@ namespace OhLivrosApp.Models
         /// </summary>
         [ValidateNever]
         public Genero Genero { get; set; } = null!;
+
+
+        /// <summary>
+        /// Lista de detalhes associados à encomenda
+        /// </summary>
+        public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
+
+        /// <summary>
+        /// Lista de detalhes associados ao Carrinho
+        /// </summary>
+        public List<DetalheCarrinho> DetalhesCarrinho { get; set; } = [];
     }
 }
