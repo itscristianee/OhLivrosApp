@@ -72,14 +72,6 @@ namespace OhLivrosApp.Models
         public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
     }
 
-    public enum Estados
-    {
-        Pendente = 1,
-        Enviado,
-        Entregue,
-        Cancelado,
-        Devolvido,
-        Reembolsado
-    }
+    
 
 }

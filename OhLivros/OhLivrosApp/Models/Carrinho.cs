@@ -33,6 +33,11 @@ namespace OhLivrosApp.Models
         [ValidateNever]
         public Utilizador Dono { get; set; } = null!;
 
+        /// <summary>
+        /// Lista de detalhes associados ao carrinho
+        /// </summary>
+        public List<DetalheCarrinho> DetalhesCarrinho { get; set; } = [];
+
 
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OhLivrosApp.Data;
 
@@ -11,9 +12,11 @@ using OhLivrosApp.Data;
 namespace OhLivrosApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916221802_AjustTbls")]
+    partial class AjustTbls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -274,7 +277,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesCarrinhos");
+                    b.ToTable("DetalhesCarrinho");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.DetalheEncomenda", b =>
@@ -303,7 +306,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesEncomendas");
+                    b.ToTable("DetalhesEncomenda");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Encomenda", b =>

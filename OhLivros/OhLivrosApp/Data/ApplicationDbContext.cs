@@ -34,9 +34,9 @@ namespace OhLivrosApp.Data
         public DbSet<Carrinho> Carrinhos { get; set; }
 
         /// <summary>
-        /// tabela DetalhesCarrinho na BD
+        /// tabela DetalhesCarrinhos na BD
         /// </summary>
-        public DbSet<DetalheCarrinho> DetalhesCarrinho { get; set; }
+        public DbSet<DetalheCarrinho> DetalhesCarrinhos { get; set; }
 
         /// <summary>
         /// tabela Encomendas na BD
@@ -44,8 +44,8 @@ namespace OhLivrosApp.Data
         public DbSet<Encomenda> Encomendas { get; set; }
 
         /// <summary>
-        /// tabela DetalhesEncomenda na BD
+        /// tabela DetalhesEncomendas na BD
         /// </summary>
-        public DbSet<DetalheEncomenda> DetalhesEncomenda { get; set; }
+        public DbSet<DetalheEncomenda> DetalhesEncomendas { get; set; }
     }
 }
