@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using OhLivrosApp.Constantes;
 
 namespace OhLivrosApp.Areas.Identity.Pages.Account
 {
@@ -120,6 +121,8 @@ namespace OhLivrosApp.Areas.Identity.Pages.Account
 
                 if (result.Succeeded)
                 {
+                    // Atribuir o papel de Utilizador ao novo utilizador registado
+                    _userManager.AddToRoleAsync(user,Perfis.Utilizador.ToString()).Wait();
                     _logger.LogInformation("User created a new account with password.");
 
                     var userId = await _userManager.GetUserIdAsync(user);

@@ -1,6 +1,8 @@
 ﻿namespace OhLivrosApp.Constantes
 {
-    public class Perfis
+    public enum Perfis
     {
+        Utilizador = 1,
+        Administrador
     }
 }
