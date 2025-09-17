@@ -1,6 +1,9 @@
-using System.Diagnostics;
+using Humanizer.Localisation;
 using Microsoft.AspNetCore.Mvc;
 using OhLivrosApp.Models;
+using OhLivrosApp.Repositorios;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace OhLivrosApp.Controllers
 {
@@ -8,13 +11,20 @@ namespace OhLivrosApp.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        // Guardar referência ao repositório injetado
+        private readonly HomeRepositorio _homeRepositorio;
+
+        // Recebe o logger (para registo de mensagens) e o repositório (injeção de dependência no Controller)
+        public HomeController(ILogger<HomeController> logger, HomeRepositorio homeRepositorio)
         {
+            _homeRepositorio = homeRepositorio;
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(string termo = "", int generoId = 0)
         {
+            IEnumerable <Livro> livros = _homeRepositorio.GetLivros(termo,generoId).Result;
+            IEnumerable<Genero> generos = await _homeRepositorio.GetGeneros();
             return View();
         }
 
