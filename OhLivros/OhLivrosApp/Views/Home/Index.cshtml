@@ -2,14 +2,56 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="w-100 mt-4 d-flex flex-wrap ">
-    @for (int i = 1; i <= 8; i++)
+<div class="jumbotron">
+    <h1 class="display-4">Bem-vindo ao OhLivros!</h1>
+    <p class="lead">Sua livraria online de confiança.</p>
+    <hr class="my-4">
+    <p>Explore nossa coleção de livros e encontre seu próximo favorito.</p>
+</div>
+
+
+
+<div class="my-2">
+    <form asp-action="Index" class="row row-cols-lg-auto g-3 align-items-center">
+        <div class="col-12">
+            <label class="visually-hidden" for="genreId">Géneros</label>
+            <select class="form-select" id="generoId" name="generoId">
+                <option selected>Género</option>
+                <option value="#">Drama</option>
+                <option value="#">Thriller</option>
+               
+            </select>
+        </div>
+
+        <div class="col-12">
+            <label class="visually-hidden" for="">Procurar por título</label>
+            <div class="input-group">
+                <div class="input-group-text"></div>
+                <input type="text" class="form-control" value="" id="" name="" placeholder="Procurar por título">
+            </div>
+        </div>
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Pesquisar</button>
+            <a href="/Home/Index" class="btn btn-dark">Limpar</a>
+        </div>
+    </form>
+</div>
+
+
+
+<div class="w-100 mt-4 d-flex flex-wrap">
+    @for (int i = 1; i <= 9; i++)
     {
-<div class="card" style="width: 18rem;">
-    <img src="..." class="card-img-top" alt="...">
+<div class="card mx-2 mb-4" style="width: 16rem;">
+            <img src="https://picsum.photos/200/300" class="card-img-top" alt="...">
     <div class="card-body">
-        <h5 class="card-title">Card title</h5>
-        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card’s content.</p>
+                <h5 class="card-title">Título do livro</h5>
+        <p class="card-text">
+                    Autor:
+                    Preco:
+
+        </p>
         <a href="#" class="btn btn-primary">Go somewhere</a>
     </div>
 </div>
