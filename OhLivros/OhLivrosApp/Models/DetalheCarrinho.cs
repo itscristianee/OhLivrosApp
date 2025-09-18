@@ -23,9 +23,10 @@ namespace OhLivrosApp.Models
         /// Preço unitário do livro
         /// </summary>
         [Required(ErrorMessage = "O {0} é de preenchimento obrigatório")]
+        [Column(TypeName = "decimal(10,2)")]
         [Display(Name = "Preço Unitário")]
-        [DataType(DataType.Currency)]
-        public double PrecoUnitario { get; set; }
+        public decimal PrecoUnitario { get; set; }
+
 
         /// <summary>
         /// FK para o livro associado

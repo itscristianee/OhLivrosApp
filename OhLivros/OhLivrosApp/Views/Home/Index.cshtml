@@ -3,19 +3,12 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="jumbotron">
-    <h1 class="display-4">Bem-vindo ao OhLivros!</h1>
-    <p class="lead">Sua livraria online de confiança.</p>
-    <hr class="my-4" />
-    <p>Explore nossa coleção de livros e encontre seu próximo favorito.</p>
-</div>
-
 <!-- Form pesquisa (GET) -->
 <form method="get" asp-action="Index" class="row row-cols-lg-auto g-3 align-items-center my-2">
     <div class="col-12">
         <label class="visually-hidden" for="generoId">Género</label>
         <select class="form-select" id="generoId" name="generoId">
-            <option value="">Selecione o Género...</option>
+            <option value="">Selecione o Género..</option>
             @foreach (var g in Model.Generos)
             {
                 <option value="@g.Id" selected="@(Model.GeneroId == g.Id ? "selected" : null)">@g.Nome</option>
