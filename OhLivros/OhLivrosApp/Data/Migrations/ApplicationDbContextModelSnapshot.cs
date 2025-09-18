@@ -235,17 +235,14 @@ namespace OhLivrosApp.Data.Migrations
                     b.Property<int>("DonoFK")
                         .HasColumnType("int");
 
-                    b.Property<int>("DonoId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("Eliminado")
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DonoId");
+                    b.HasIndex("DonoFK");
 
-                    b.ToTable("Carrinhos");
+                    b.ToTable("Carrinhos", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.DetalheCarrinho", b =>
@@ -274,7 +271,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesCarrinhos");
+                    b.ToTable("DetalhesCarrinhos", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.DetalheEncomenda", b =>
@@ -303,7 +300,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesEncomendas");
+                    b.ToTable("DetalhesEncomendas", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Encomenda", b =>
@@ -338,7 +335,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("CompradorFK");
 
-                    b.ToTable("Encomendas");
+                    b.ToTable("Encomendas", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Genero", b =>
@@ -356,7 +353,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Generos");
+                    b.ToTable("Generos", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Livro", b =>
@@ -391,7 +388,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("GeneroFK");
 
-                    b.ToTable("Livros");
+                    b.ToTable("Livros", (string)null);
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Utilizador", b =>
@@ -435,7 +432,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Utilizadores");
+                    b.ToTable("Utilizadores", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -493,7 +490,7 @@ namespace OhLivrosApp.Data.Migrations
                 {
                     b.HasOne("OhLivrosApp.Models.Utilizador", "Dono")
                         .WithMany("Carrinhos")
-                        .HasForeignKey("DonoId")
+                        .HasForeignKey("DonoFK")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

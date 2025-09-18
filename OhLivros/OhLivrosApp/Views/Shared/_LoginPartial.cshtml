@@ -1,33 +1,83 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
 <ul class="navbar-nav">
-    <li class="nav-item">
-        <a class="nav-link" href="#">
-            <span id="cartCount" class="badge text-bg-info">0</span>
-            <i class="bi bi-cart text-white"></i>
-        </a>
-    </li>
-@if (SignInManager.IsSignedIn(User))
-{
-    <li class="nav-item">
-        <a  class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
-    </li>
-    <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button  type="submit" class="nav-link btn btn-link text-dark">Logout</button>
-        </form>
-    </li>
-}
-else
-{
     
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
-    </li>
-}
+    
+   
+
+    @if (SignInManager.IsSignedIn(User))
+    { 
+        
+        <li class="nav-item">
+        <a class="nav-link" href="/Carrinhos/MeuCarrinho">
+            <span id="totalCar" class="badge text-bg-info">0</span>
+            <i class="bi bi-cart text-white"></i>
+            </a>
+        </li>
+        <!-- EXPÕE o GUID do Identity (Id) para o teu JS, escondido -->
+        <span id="username" style="display:none;">
+            @User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
+        </span>
+
+        
+        <li class="nav-item">
+            <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
+                Hello @User.Identity?.Name!
+                @if (User.IsInRole("Administrador"))
+                {
+                    <span>(Admin)</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item">
+            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                <button type="submit" class="nav-link btn btn-link text-dark">Sair</button>
+            </form>
+        </li>
+
+        @* JS só é renderizado quando o utilizador está autenticado*@
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const el = document.getElementById('totalCar');
+                if (!el) return;
+                carregarTotalCarrinho();
+            });
+
+            async function carregarTotalCarrinho() {
+                try {
+                    const resp = await fetch('/Carrinhos/TotalNoCarrinho', {
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'fetch' } // ajuda o backend a devolver 401 em AJAX
+                    });
+
+                    const ct = resp.headers.get('content-type') || '';
+
+                    if (resp.ok && ct.includes('application/json')) {
+                        const dados = await resp.json();
+                        const el = document.getElementById('totalCar');
+                        if (el) el.textContent = (dados.total ?? dados) || 0;
+                        return;
+                    }
+
+                    // Em partial NUNCA forces redirect. Se der 401/redirect, ignora.
+                    // O ícone fica com "0" e está tudo.
+                } catch (e) {
+                    console.error('Erro ao carregar total do carrinho:', e);
+                }
+            }
+        </script>
+    }
+    else
+    {
+
+        <li class="nav-item">
+            <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Registar</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Entrar</a>
+        </li>
+    }
 </ul>

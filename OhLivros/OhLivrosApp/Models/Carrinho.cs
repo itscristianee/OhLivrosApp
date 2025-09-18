@@ -22,7 +22,7 @@ namespace OhLivrosApp.Models
         /// <summary>
         /// Chave estrangeira para o Utilizador dono do carrinho
         /// </summary>
-        [ForeignKey(nameof(Utilizador))]
+        [ForeignKey(nameof(Dono))]     
         [Display(Name = "Utilizador")]
         [Required(ErrorMessage = "O {0} é de preenchimento obrigatório")]
         public int DonoFK { get; set; }

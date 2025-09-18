@@ -1,4 +1,5 @@
 using Humanizer.Localisation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using OhLivrosApp.Models;
@@ -11,6 +12,7 @@ using static System.Reflection.Metadata.BlobBuilder;
 
 namespace OhLivrosApp.Controllers
 {
+    
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;

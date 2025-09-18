@@ -1,0 +1,73 @@
+﻿@model OhLivrosApp.Models.Carrinho
+@using System.Globalization
+@{
+    ViewData["Title"] = "Meu Carrinho";
+    var cultura = new CultureInfo("pt-PT");
+}
+
+<div style="width:90%;margin:auto" class="mt-2">
+    @if (Model != null && Model.DetalhesCarrinho != null && Model.DetalhesCarrinho.Count > 0)
+    {
+        <h5>O meu carrinho</h5>
+
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>Imagem</th>
+                    <th>Género</th>
+                    <th>Preço unitário</th>
+                    <th>Quantidade</th>
+                    <th>Total (linha)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.DetalhesCarrinho)
+                {
+                    <tr>
+                        <td>@item.Livro.Titulo</td>
+                        <td>
+                            @if (string.IsNullOrEmpty(item.Livro.Imagem))
+                            {
+                                <img src="~/imagens/sem-capa.png" style="width:80px;height:100px" alt="Sem imagem" />
+                            }
+                            else
+                            {
+                                <img src="~/imagens/@item.Livro.Imagem" style="width:80px;height:100px" alt="@item.Livro.Titulo" />
+                            }
+                        </td>
+                        <td>@item.Livro.Genero?.Nome</td>
+                        <td>@item.PrecoUnitario.ToString("C", cultura)</td>
+                        <td>@item.Quantidade</td>
+                        <td>@( (item.PrecoUnitario * item.Quantidade).ToString("C", cultura) )</td>
+                        <td>
+                            <!-- aumentar quantidade -->
+                            <a class="btn btn-sm btn-outline-primary me-1"
+                               href="/Carrinhos/AdicionarItem?livroId=@item.LivroFK&redirect=1">+</a>
+
+                            <!-- diminuir quantidade (se chegar a 0, remove a linha) -->
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="/Carrinhos/RemoverItem?livroId=@item.LivroFK">-</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="my-3 d-flex align-items-baseline gap-2">
+            <h5 class="mb-0">Total:</h5>
+            <span class="fs-5 fw-semibold">
+                @Model.DetalhesCarrinho.Sum(d => d.PrecoUnitario * d.Quantidade).ToString("C", cultura)
+            </span>
+        </div>
+
+        <div class="my-2">
+            <a class="btn btn-primary" href="/Carrinhos/Checkout">Finalizar compra</a>
+        </div>
+    }
+    else
+    {
+        <h5>O carrinho está vazio.</h5>
+    }
+</div>

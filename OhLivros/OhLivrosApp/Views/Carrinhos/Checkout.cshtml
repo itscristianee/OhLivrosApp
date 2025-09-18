@@ -1,0 +1,114 @@
+﻿@model OhLivrosApp.Models.Encomenda
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-3">Checkout</h2>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    <!-- Dados do cliente -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>Dados do Cliente</strong></div>
+        <div class="card-body row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Nome:</strong> @Model.Utilizador.Nome</p>
+                <p class="mb-1"><strong>Email:</strong> @User.Identity?.Name</p>
+                <p class="mb-1"><strong>Telemóvel:</strong> @Model.Utilizador.Telemovel</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Morada:</strong> @Model.Utilizador.Morada</p>
+                <p class="mb-1"><strong>Código Postal:</strong> @Model.Utilizador.CodPostal</p>
+                <p class="mb-1"><strong>País:</strong> @Model.Utilizador.Pais</p>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a asp-controller="Perfil" asp-action="Editar" class="btn btn-outline-secondary btn-sm">
+                Atualizar dados
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumo do carrinho -->
+    <div class="card mb-3">
+        <div class="card-header"><strong>Resumo da Encomenda</strong></div>
+        <div class="card-body p-0">
+            @if (Model.Itens == null || !Model.Itens.Any())
+            {
+                <div class="p-3">O carrinho está vazio.</div>
+            }
+            else
+            {
+                <table class="table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Livro</th>
+                            <th class="text-end">Qtd</th>
+                            <th class="text-end">Preço</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in Model.Itens)
+                        {
+                            <tr>
+                                <td>@i.Titulo</td>
+                                <td class="text-end">@i.Quantidade</td>
+                                <td class="text-end">@i.PrecoUnitario.ToString("C")</td>
+                                <td class="text-end">@i.Subtotal.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Total</th>
+                            <th class="text-end">@Model.Total.ToString("C")</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            }
+        </div>
+    </div>
+
+    <!-- Pagamento -->
+    <form asp-action="Checkout" method="post" class="card">
+        @Html.AntiForgeryToken()
+        <div class="card-header"><strong>Pagamento</strong></div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label asp-for="MetodoPagamento" class="form-label"></label>
+                <select asp-for="MetodoPagamento" class="form-select" required>
+                    <option value="">-- selecione --</option>
+                    <option>MBWay</option>
+                    <option>Cartão de Crédito</option>
+                    <option>Multibanco</option>
+                    <option>Transferência</option>
+                </select>
+                <span asp-validation-for="MetodoPagamento" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <a asp-controller="Carrinhos" asp-action="MeuCarrinho" class="btn btn-outline-secondary">
+                Voltar ao carrinho
+            </a>
+            <button type="submit" class="btn btn-primary" id="btnCheckout"
+                    @(Model.Itens == null || !Model.Itens.Any() ? "disabled" : "")>
+                Confirmar Encomenda
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // evitar duplo submit
+        document.getElementById('btnCheckout')?.addEventListener('click', function () {
+            this.disabled = true;
+            this.form?.submit();
+        });
+    </script>
+}
