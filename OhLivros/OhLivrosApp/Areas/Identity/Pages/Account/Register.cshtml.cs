@@ -122,7 +122,7 @@ namespace OhLivrosApp.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     // Atribuir o papel de Utilizador ao novo utilizador registado
-                    _userManager.AddToRoleAsync(user,Perfis.Utilizador.ToString()).Wait();
+                    //  _userManager.AddToRoleAsync(user,Perfis.Utilizador.ToString()).Wait();
                     _logger.LogInformation("User created a new account with password.");
 
                     var userId = await _userManager.GetUserIdAsync(user);

@@ -1,6 +1,13 @@
-using System.Diagnostics;
+using Humanizer.Localisation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using OhLivrosApp.Models;
+using OhLivrosApp.Models.DTO;
+using OhLivrosApp.Repositorios;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace OhLivrosApp.Controllers
 {
@@ -8,17 +15,40 @@ namespace OhLivrosApp.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        // Guardar referência ao repositório injetado
+        private readonly IHomeRepositorio _homeRepositorio;
+
+        // Recebe o logger (para registo de mensagens) e o repositório (injeção de dependência no Controller)
+        public HomeController(ILogger<HomeController> logger, IHomeRepositorio homeRepositorio)
         {
+            _homeRepositorio = homeRepositorio;
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(string termo = "", int generoId = 0)
+        {
+            var livros = await _homeRepositorio.GetLivros(termo, generoId);
+            var generos = await _homeRepositorio.GetGeneros();
+
+            // Preenche o DTO de exibição com listas e filtros
+            var livrosModel = new LivroModelDTO
+            {
+                Livros = livros,
+                Generos = generos,
+                Termo = termo,
+                GeneroId = generoId
+            };
+
+            return View(livrosModel); 
+        }
+
+
+        public IActionResult Privacy()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        public IActionResult Sobre()
         {
             return View();
         }
