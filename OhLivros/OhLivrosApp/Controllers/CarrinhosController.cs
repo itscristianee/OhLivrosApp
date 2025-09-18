@@ -103,10 +103,10 @@ namespace OhLivrosApp.Controllers
         /// GET do Checkout — só apresenta o formulário de dados de entrega/pagamento.
         /// </summary>
       
-        public IActionResult Checkout()
-        {
-            return View(new Encomenda());
-        }
+            public IActionResult Checkout()
+            {
+                return View(new Encomenda());
+            }
 
         /// <summary>
         /// POST do Checkout — cria Encomenda + Detalhes e limpa o carrinho.

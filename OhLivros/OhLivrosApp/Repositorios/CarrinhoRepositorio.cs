@@ -194,13 +194,10 @@ namespace OhLivrosApp.Repositorios
                 if (itens.Count == 0) throw new InvalidOperationException("Carrinho vazio");
 
                 // 3. Criar encomenda principal (cabecalho)
-                encomenda.DataCriacao = DateTime.Now;
+                encomenda.DataCriacao = DateTime.UtcNow;
                 encomenda.CompradorFK = utilizadorId;
                 encomenda.Pago = false;
                 encomenda.Estado = Estados.Pendente;        // enum
-
-                await _context.Encomendas.AddAsync(encomenda);
-                await _context.SaveChangesAsync();
 
                 // 4. Criar detalhes da encomenda (linhas)
                 foreach (var item in itens)
