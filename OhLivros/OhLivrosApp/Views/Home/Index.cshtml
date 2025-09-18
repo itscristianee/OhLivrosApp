@@ -1,4 +1,4 @@
-﻿@model IEnumerable<OhLivrosApp.Models.Livro>
+﻿@model OhLivrosApp.Models.DTO.LivroModelDTO
 @{
     ViewData["Title"] = "Home Page";
 }
@@ -6,53 +6,43 @@
 <div class="jumbotron">
     <h1 class="display-4">Bem-vindo ao OhLivros!</h1>
     <p class="lead">Sua livraria online de confiança.</p>
-    <hr class="my-4">
+    <hr class="my-4" />
     <p>Explore nossa coleção de livros e encontre seu próximo favorito.</p>
 </div>
 
+<!-- Form pesquisa (GET) -->
+<form method="get" asp-action="Index" class="row row-cols-lg-auto g-3 align-items-center my-2">
+    <div class="col-12">
+        <label class="visually-hidden" for="generoId">Género</label>
+        <select class="form-select" id="generoId" name="generoId">
+            <option value="">Selecione o Género...</option>
+            @foreach (var g in Model.Generos)
+            {
+                <option value="@g.Id" selected="@(Model.GeneroId == g.Id ? "selected" : null)">@g.Nome</option>
+            }
+        </select>
+    </div>
 
-
-<div class="my-2">
-    <form asp-action="Index" class="row row-cols-lg-auto g-3 align-items-center">
-        <div class="col-12">
-            <label class="visually-hidden" for="genreId">Géneros</label>
-            <select class="form-select" id="generoId" name="generoId">
-                <option selected>Género</option>
-                <option value="#">Drama</option>
-                <option value="#">Thriller</option>
-               
-            </select>
+    <div class="col-12">
+        <label class="visually-hidden" for="termo">Procurar por título</label>
+        <div class="input-group">
+            <span class="input-group-text">&#128269;</span>
+            <input type="text" class="form-control" id="termo" name="termo"
+                   value="@(Model.Termo ?? "")" placeholder="Procurar por título" />
         </div>
+    </div>
 
-        <div class="col-12">
-            <label class="visually-hidden" for="">Procurar por título</label>
-            <div class="input-group">
-                <div class="input-group-text"></div>
-                <input type="text" class="form-control" value="" id="" name="" placeholder="Procurar por título">
-            </div>
-        </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Pesquisar</button>
+        <a href="/Home/Index" class="btn btn-dark">Limpar</a>
+    </div>
+</form>
 
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary">Pesquisar</button>
-            <a href="/Home/Index" class="btn btn-dark">Limpar</a>
-        </div>
-    </form>
-</div>
-
-
-
-@*
-Objetivo da secção:
--------------------
-- Listar os livros em cartões (card) com capa, título, género, autor e preço.
-- Usar nomes de propriedades em PT (Titulo, Autor, Preco, Imagem, GeneroNome/Genero.Nome).
-- Botão "Adicionar ao carrinho" .
-*@
+@* Cards de livros *@
 <div class="w-100 mt-4 d-flex flex-wrap">
-    @foreach (var l in Model)  
+    @foreach (var l in Model.Livros)
     {
         <div class="card mx-3 mb-4" style="width: 11rem;">
-            
             @{
                 var src = string.IsNullOrWhiteSpace(l.Imagem)
                 ? "/imagens/sem-capa.png"
@@ -65,16 +55,17 @@ Objetivo da secção:
             <div class="card-body">
                 <h5 class="card-title">@l.Titulo</h5>
                 <p class="card-text">
-                    <b>Género:</b> @(@l.Genero?.Nome) <br />   
+                    <b>Género:</b> @(l.Genero?.Nome ?? "—") <br />
                     <b>Autor:</b> @l.Autor <br />
                     <b>Preço:</b> @l.Preco.ToString("C")
                 </p>
-
-                
-                <button type="button" onclick="adicionar(@l.Id)" class="btn btn-primary">
-                    Adicionar ao carrinho
-                </button>
+                <button type="button" onclick="adicionar(@l.Id)" class="btn btn-primary">Adicionar ao carrinho</button>
             </div>
         </div>
     }
+    @if (!Model.Livros.Any())
+    {
+        <div class="alert alert-info w-100">Nenhum livro encontrado.</div>
+    }
 </div>
+

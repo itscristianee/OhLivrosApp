@@ -67,7 +67,8 @@ namespace OhLivrosApp.Repositorios
                     Autor = livro.Autor,
                     Titulo = livro.Titulo,
                     GeneroFK = livro.GeneroFK,
-                    Preco = livro.Preco
+                    Preco = livro.Preco,
+                    Genero = livro.Genero
                 }).ToListAsync();
 
             return livros;

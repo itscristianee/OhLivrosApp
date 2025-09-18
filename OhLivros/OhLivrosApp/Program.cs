@@ -17,7 +17,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 builder.Services.AddControllersWithViews();
 
 //para permitir injeção de dependência nos controladores.
-builder.Services.AddScoped<IHomeRepositorio, HomeRepositorio>();
+builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
 
 var app = builder.Build();
 
@@ -36,6 +36,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
