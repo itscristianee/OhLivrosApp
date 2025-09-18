@@ -71,8 +71,13 @@ namespace OhLivrosApp.Models
         /// Lista de detalhes associados à encomenda
         /// </summary>
         public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
+
+        [NotMapped]
+        [Display(Name = "Total")]
+        public decimal Total => DetalhesEncomenda?.Sum(d => d.PrecoUnitario * d.Quantidade) ?? 0m;
+
     }
 
-    
+
 
 }
