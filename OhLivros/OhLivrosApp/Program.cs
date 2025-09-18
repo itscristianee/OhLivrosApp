@@ -20,6 +20,7 @@ builder.Services.AddHttpContextAccessor();
 //para permitir injeção de dependência nos controladores.
 builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
 builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
+builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>();
 
 var app = builder.Build();
 
