@@ -1,0 +1,10 @@
+﻿@{
+    ViewData["Title"] = "Falha no checkout";
+}
+<div class="container mt-4">
+    <div class="alert alert-danger">
+        <h4 class="alert-heading">Ups…</h4>
+        <p>@(TempData["errorMessage"] ?? "Não foi possível concluir o checkout.")</p>
+    </div>
+    <a asp-controller="Carrinhos" asp-action="Index" class="btn btn-outline-secondary">Voltar ao carrinho</a>
+</div>

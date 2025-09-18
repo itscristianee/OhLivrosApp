@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OhLivrosApp.Constantes;
 using OhLivrosApp.Data;
 using OhLivrosApp.Models;
+using System.Security.Claims;
 
 namespace OhLivrosApp.Repositorios
 {
@@ -17,12 +19,18 @@ namespace OhLivrosApp.Repositorios
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IHttpContextAccessor _http;
+        private readonly ILogger<CarrinhoRepositorio> _logger;
 
-        public CarrinhoRepositorio(ApplicationDbContext context, IHttpContextAccessor http, UserManager<IdentityUser> userManager)
+        public CarrinhoRepositorio(ApplicationDbContext context,
+                                    IHttpContextAccessor http,
+                                    UserManager<IdentityUser> userManager,
+                                    ILogger<CarrinhoRepositorio> logger)
         {
             _context = context;
             _userManager = userManager;
             _http = http;
+            _logger = logger;
+
         }
 
         /// <summary>
@@ -34,31 +42,35 @@ namespace OhLivrosApp.Repositorios
         /// </summary>
         public async Task<int> AdicionarItem(int livroId, int qtd)
         {
+            if (qtd <= 0) throw new ArgumentOutOfRangeException(nameof(qtd), "Quantidade deve ser > 0.");
+
             var utilizadorId = await GetUserIdAsync();
             if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
 
             await using var tx = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                // garante que há carrinho para este utilizador
-                var carrinho = await GetCarrinho(utilizadorId)
-                               ?? (await _context.Carrinhos.AddAsync(new Carrinho { DonoFK = utilizadorId })).Entity;
-                await _context.SaveChangesAsync();
+                 // garante que há carrinho para este utilizador
+                 var carrinho = await GetCarrinho(utilizadorId);
+                if (carrinho is null)
+                {
+                    carrinho = (await _context.Carrinhos.AddAsync(new Carrinho { DonoFK = utilizadorId })).Entity;
+                    await _context.SaveChangesAsync(); // garantir carrinho.Id
+                }
 
                 // verifica se o livro já está no carrinho
                 var item = await _context.DetalhesCarrinhos
-                                    .FirstOrDefaultAsync(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId);
+                    .FirstOrDefaultAsync(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId);
 
                 if (item is not null)
                 {
-                    item.Quantidade += qtd; // já existe → incrementa 
+                    item.Quantidade += qtd;      // já existe → incrementa 
                 }
                 else
                 {
-                    // cria detalhe novo
-                    var livro = await _context.Livros.FindAsync(livroId)
-                               ?? throw new ArgumentException("Livro não encontrado");
+                     // cria detalhe novo
+                     var livro = await _context.Livros.FindAsync(livroId)
+                        ?? throw new ArgumentException("Livro não encontrado", nameof(livroId));
 
                     await _context.DetalhesCarrinhos.AddAsync(new DetalheCarrinho
                     {
@@ -71,7 +83,6 @@ namespace OhLivrosApp.Repositorios
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
-
                 return await GetTotalItensCarrinho(utilizadorId);
             }
             catch
@@ -80,6 +91,8 @@ namespace OhLivrosApp.Repositorios
                 throw;
             }
         }
+
+
 
         /// <summary>
         /// Remove 1 unidade de um livro do carrinho.
@@ -111,7 +124,7 @@ namespace OhLivrosApp.Repositorios
         public async Task<Carrinho?> GetCarrinhoUtilizador()
         {
             var utilizadorId = await GetUserIdAsync();
-            if (utilizadorId == 0) throw new InvalidOperationException("Utilizador inválido");
+            if (utilizadorId == 0) return null;
 
             return await _context.Carrinhos
                             .Include(c => c.DetalhesCarrinho)
@@ -147,32 +160,46 @@ namespace OhLivrosApp.Repositorios
         }
 
         /// <summary>
-        /// Checkout do carrinho:
-        /// - Cria encomenda + detalhes
-        /// - Esvazia carrinho
-        /// - Tudo numa transação
+        /// Realiza o checkout do carrinho do utilizador autenticado.
         /// </summary>
         public async Task<bool> Checkout(Encomenda encomenda)
         {
+            //  Passos:
+            //      1.Valida se utilizador está autenticado
+            //      2.Obtém o carrinho e respetivos itens
+            //      3.Cria uma encomenda(cabecalho)
+            //      4.Cria os detalhes da encomenda(linhas)
+            //      5.Limpa o carrinho
+            //      6.Tudo dentro de uma transação para garantir consistência
+
+
+
+            // Inicia transação explícita → se falhar, rollback automático
             await using var tx = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                // 1. Obter ID do utilizador autenticado
                 var utilizadorId = await GetUserIdAsync();
                 if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
 
+                // 2. Obter carrinho do utilizador
                 var carrinho = await GetCarrinho(utilizadorId) ?? throw new InvalidOperationException("Carrinho inválido");
 
-                var itens = await _context.DetalhesCarrinhos.Where(a => a.CarrinhoFK == carrinho.Id).ToListAsync();
+                // Carregar itens do carrinho
+                var itens = await _context.DetalhesCarrinhos
+                                          .Where(a => a.CarrinhoFK == carrinho.Id)
+                                          .AsTracking()
+                                          .ToListAsync();
                 if (itens.Count == 0) throw new InvalidOperationException("Carrinho vazio");
 
-                // cria encomenda principal
-                encomenda.DataCriacao = DateTime.Now;
+                // 3. Criar encomenda principal (cabecalho)
+                encomenda.DataCriacao = DateTime.UtcNow;
                 encomenda.CompradorFK = utilizadorId;
-                await _context.Encomendas.AddAsync(encomenda);
-                await _context.SaveChangesAsync();
+                encomenda.Pago = false;
+                encomenda.Estado = Estados.Pendente;        // enum
 
-                // cria detalhes da encomenda
+                // 4. Criar detalhes da encomenda (linhas)
                 foreach (var item in itens)
                 {
                     await _context.DetalhesEncomendas.AddAsync(new DetalheEncomenda
@@ -180,11 +207,12 @@ namespace OhLivrosApp.Repositorios
                         LivroFK = item.LivroFK,
                         EncomendaFK = encomenda.Id,
                         Quantidade = item.Quantidade,
-                        PrecoUnitario = item.PrecoUnitario
+                        PrecoUnitario = item.PrecoUnitario,
+                        Encomenda = encomenda
                     });
                 }
 
-                // limpa carrinho
+                // 5. Limpar carrinho (remover itens)
                 _context.DetalhesCarrinhos.RemoveRange(itens);
                 await _context.SaveChangesAsync();
 
@@ -204,10 +232,68 @@ namespace OhLivrosApp.Repositorios
         /// </summary>
         private async Task<int> GetUserIdAsync()
         {
-            var principal = _http.HttpContext?.User;
-            var identityId = _userManager.GetUserId(principal); // GUID string
-            var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.UserName == identityId);
-            return utilizador?.Id ?? 0;
+            var ctx = _http.HttpContext;
+            var principal = ctx?.User;
+
+            if (principal?.Identity?.IsAuthenticated != true)
+            {
+                _logger.LogWarning("GetUserIdAsync: utilizador não autenticado.");
+                return 0;
+            }
+
+            // GUID do Identity (Claim NameIdentifier)
+            var identityId = (principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(identityId))
+            {
+                _logger.LogWarning("GetUserIdAsync: Claim NameIdentifier em falta.");
+                return 0;
+            }
+
+            // (Opcional) Log de ligação à BD para confirmar que está a apontar para o DB certo
+            try
+            {
+                var cnn = _context.Database.GetDbConnection();
+                _logger.LogDebug("GetUserIdAsync: BD '{db}' @ '{src}'", cnn.Database, cnn.DataSource);
+            }
+            catch { /* ignore */ }
+
+            // Procura na tabela Utilizadores onde UserName guarda o GUID do Identity
+            var query = _context.Utilizadores
+                                .AsNoTracking()
+                                .Where(u => (u.UserName ?? string.Empty).Trim() == identityId);
+
+            _logger.LogDebug("GetUserIdAsync SQL: {sql}", query.ToQueryString());
+
+            var utilizador = await query.FirstOrDefaultAsync();
+
+            if (utilizador == null)
+            {
+                _logger.LogWarning("GetUserIdAsync: não encontrei Utilizador para IdentityId {guid}.", identityId);
+
+                //  criar automaticamente o registo em Utilizadores
+                // quando ainda não existir, e so descomentar este bloco:
+                /*
+                var nome = principal.Identity?.Name;
+                var novo = new Utilizador
+                {
+                    Nome = string.IsNullOrWhiteSpace(nome) ? "Sem nome" : nome!,
+                    NIF = "000000000",
+                    UserName = identityId
+                };
+                _context.Utilizadores.Add(novo);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("GetUserIdAsync: criei Utilizador Id={id} para IdentityId {guid}.", novo.Id, identityId);
+                return novo.Id;
+                */
+
+                return 0;
+            }
+
+            _logger.LogInformation("GetUserIdAsync: Utilizador '{nome}' (Id={id}) associado ao IdentityId {guid}.",
+                utilizador.Nome, utilizador.Id, identityId);
+
+            return utilizador.Id;
         }
+
     }
 }

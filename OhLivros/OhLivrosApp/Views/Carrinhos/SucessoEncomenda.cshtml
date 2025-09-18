@@ -1,0 +1,11 @@
+﻿@{
+    ViewData["Title"] = "Encomenda concluída";
+}
+<div class="container mt-4">
+    <div class="alert alert-success">
+        <h4 class="alert-heading">Obrigado!</h4>
+        <p>@(TempData["successMessage"] ?? "A tua encomenda foi criada com sucesso.")</p>
+    </div>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Voltar à loja</a>
+    <a asp-controller="Encomendas" asp-action="Minhas" class="btn btn-outline-secondary ms-2">Ver minhas encomendas</a>
+</div>
