@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OhLivrosApp.Data;
 
@@ -11,9 +12,11 @@ using OhLivrosApp.Data;
 namespace OhLivrosApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250918174213_UpdateTblUtili")]
+    partial class UpdateTblUtili
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -242,7 +245,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("DonoFK");
 
-                    b.ToTable("Carrinhos", (string)null);
+                    b.ToTable("Carrinhos");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.DetalheCarrinho", b =>
@@ -271,7 +274,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesCarrinhos", (string)null);
+                    b.ToTable("DetalhesCarrinhos");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.DetalheEncomenda", b =>
@@ -300,7 +303,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("LivroFK");
 
-                    b.ToTable("DetalhesEncomendas", (string)null);
+                    b.ToTable("DetalhesEncomendas");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Encomenda", b =>
@@ -335,7 +338,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("CompradorFK");
 
-                    b.ToTable("Encomendas", (string)null);
+                    b.ToTable("Encomendas");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Genero", b =>
@@ -353,7 +356,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Generos", (string)null);
+                    b.ToTable("Generos");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Livro", b =>
@@ -388,7 +391,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasIndex("GeneroFK");
 
-                    b.ToTable("Livros", (string)null);
+                    b.ToTable("Livros");
                 });
 
             modelBuilder.Entity("OhLivrosApp.Models.Utilizador", b =>
@@ -432,7 +435,7 @@ namespace OhLivrosApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Utilizadores", (string)null);
+                    b.ToTable("Utilizadores");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

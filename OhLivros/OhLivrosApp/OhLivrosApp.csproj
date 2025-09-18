@@ -18,7 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Views\Carrinhos\" />
     <Folder Include="wwwroot\css\" />
   </ItemGroup>
 

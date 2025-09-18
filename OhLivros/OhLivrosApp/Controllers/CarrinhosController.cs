@@ -41,18 +41,23 @@ namespace OhLivrosApp.Controllers
                 var total = await _carrinhoRepo.AdicionarItem(livroId, qtd);
 
                 // Ajax: devolve número total no carrinho
-                if (redirect == 0) return Ok(total);
-                
+                if (redirect == 0) return Json(new { sucesso = true, total }); 
+
                 TempData["successMessage"] = "Livro adicionado ao carrinho.";
+                return RedirectToAction(nameof(MeuCarrinho));
             }
             catch (Exception ex)
             {
                 // ponto crítico: qualquer falha no repositório
                 _logger.LogError(ex, "Erro a adicionar item ao carrinho");
+                if (redirect == 0)
+                    return StatusCode(500, new { sucesso = false, erro = "Falha ao adicionar item." }); // <-- JSON em erro
+
                 TempData["errorMessage"] = "Ocorreu um erro ao adicionar o item ao carrinho.";
+                return RedirectToAction(nameof(MeuCarrinho));
             }
 
-            return RedirectToAction(nameof(MeuCarrinho));
+           
         }
 
         /// <summary>

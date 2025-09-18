@@ -18,12 +18,18 @@ namespace OhLivrosApp.Repositorios
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IHttpContextAccessor _http;
+        private readonly ILogger<CarrinhoRepositorio> _logger;
 
-        public CarrinhoRepositorio(ApplicationDbContext context, IHttpContextAccessor http, UserManager<IdentityUser> userManager)
+        public CarrinhoRepositorio(ApplicationDbContext context,
+                                    IHttpContextAccessor http,
+                                    UserManager<IdentityUser> userManager,
+                                    ILogger<CarrinhoRepositorio> logger)
         {
             _context = context;
             _userManager = userManager;
             _http = http;
+            _logger = logger;
+
         }
 
         /// <summary>
@@ -222,25 +228,96 @@ namespace OhLivrosApp.Repositorios
         /// Faz a ponte entre Identity (GUID string) e Utilizador (int).
         /// Procura em Utilizadores.UserName o Id do IdentityUser.
         /// </summary>
-        
+
+        //private async Task<int> GetUserIdAsync()
+        //{
+        //    var ctx = _http.HttpContext;
+        //    var principal = ctx?.User;
+
+        //    if (principal?.Identity?.IsAuthenticated != true)
+        //        return 0;
+
+        //    // GUID do Identity (NameIdentifier)
+        //    var identityId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        //    if (string.IsNullOrEmpty(identityId)) return 0;
+
+        //    // match com a tua tabela (UserName guarda o GUID)
+        //    var utilizador = await _context.Utilizadores
+        //        .AsNoTracking()
+        //        .FirstOrDefaultAsync(u => u.UserName.Trim() == identityId.Trim());
+
+        //    if (utilizador == null)
+        //        _logger.LogWarning("Utilizador não encontrado na tabela Utilizadores. IdentityId: {id}", identityId);
+        //    else
+        //        _logger.LogInformation("Utilizador {nome} encontrado com Id interno {id}", utilizador.Nome, utilizador.Id);
+
+        //    return utilizador?.Id ?? 0;
+        //}
+
         private async Task<int> GetUserIdAsync()
         {
             var ctx = _http.HttpContext;
             var principal = ctx?.User;
 
             if (principal?.Identity?.IsAuthenticated != true)
+            {
+                _logger.LogWarning("GetUserIdAsync: utilizador não autenticado.");
                 return 0;
+            }
 
-            // GUID do Identity (NameIdentifier)
-            var identityId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(identityId)) return 0;
+            // GUID do Identity (Claim NameIdentifier)
+            var identityId = (principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(identityId))
+            {
+                _logger.LogWarning("GetUserIdAsync: Claim NameIdentifier em falta.");
+                return 0;
+            }
 
-            // match com a tua tabela (UserName guarda o GUID)
-            var utilizador = await _context.Utilizadores
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.UserName == identityId);
+            // (Opcional) Log de ligação à BD para confirmar que está a apontar para o DB certo
+            try
+            {
+                var cnn = _context.Database.GetDbConnection();
+                _logger.LogDebug("GetUserIdAsync: BD '{db}' @ '{src}'", cnn.Database, cnn.DataSource);
+            }
+            catch { /* ignore */ }
 
-            return utilizador?.Id ?? 0;
+            // Procura na tabela Utilizadores onde UserName guarda o GUID do Identity
+            var query = _context.Utilizadores
+                                .AsNoTracking()
+                                .Where(u => (u.UserName ?? string.Empty).Trim() == identityId);
+
+            _logger.LogDebug("GetUserIdAsync SQL: {sql}", query.ToQueryString());
+
+            var utilizador = await query.FirstOrDefaultAsync();
+
+            if (utilizador == null)
+            {
+                _logger.LogWarning("GetUserIdAsync: não encontrei Utilizador para IdentityId {guid}.", identityId);
+
+                //  criar automaticamente o registo em Utilizadores
+                // quando ainda não existir, e so descomentar este bloco:
+                /*
+                var nome = principal.Identity?.Name;
+                var novo = new Utilizador
+                {
+                    Nome = string.IsNullOrWhiteSpace(nome) ? "Sem nome" : nome!,
+                    NIF = "000000000",
+                    UserName = identityId
+                };
+                _context.Utilizadores.Add(novo);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("GetUserIdAsync: criei Utilizador Id={id} para IdentityId {guid}.", novo.Id, identityId);
+                return novo.Id;
+                */
+
+                return 0;
+            }
+
+            _logger.LogInformation("GetUserIdAsync: Utilizador '{nome}' (Id={id}) associado ao IdentityId {guid}.",
+                utilizador.Nome, utilizador.Id, identityId);
+
+            return utilizador.Id;
         }
+
     }
 }

@@ -102,12 +102,15 @@
     </script>
 } *@
 
-@section Scripts {
+@* @section Scripts {
     <script>
         async function add(livroId) {
              var usernameEl = document.getElementById("username");
-        if(usernameEl==null){
-            window.location.href = "/Identity/Account/Login";
+             console.log(usernameEl);
+             var userGuid = usernameEl ? usernameEl.innerText.trim() : "";
+
+        if (!userGuid) {
+           window.location.href = "/Identity/Account/Login";
           //var username=usernameEl.innerText;
           //  if(username.length<1){
           //      window.location.href="/Identity/Account/Login";
@@ -116,7 +119,7 @@
             try {
                 var resposta = await fetch(`/Carrinhos/AdicionarItem?livroId=${livroId}`);
                 if (resposta.status == 200) {
-                    var result = await response.json();
+                    var result = await resposta.json();
                     var carTotEl = document.getElementById("totalCar");
                     carTotEl.innerHTML = result;
                     window.location.href = "#totalCar";
@@ -129,5 +132,57 @@
     </script>
 }
 
+ *@
 
+@section Scripts {
+    <script>
+        async function add(livroId) {
+          const usernameEl = document.getElementById("username");
+          console.log(usernameEl);
+          const userGuid = usernameEl ? usernameEl.innerText.trim() : "";
+          console.log("userGuid:", userGuid);
+          if (!userGuid) {
+            window.location.href = "/Identity/Account/Login?returnUrl=" + encodeURIComponent(location.pathname + location.search);
+            return; // <- importante
+          }
 
+          try {
+            const resp = await fetch(`/Carrinhos/AdicionarItem?livroId=${livroId}`, {
+              headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            // não autenticado / redirect do Identity
+            if (resp.status === 401 || resp.redirected) {
+              window.location.href = "/Identity/Account/Login?returnUrl=" + encodeURIComponent(location.pathname + location.search);
+              return;
+            }
+
+            if (!resp.ok) {
+              const txt = await resp.text(); // pode ser HTML
+              console.error("Erro:", resp.status, txt);
+              alert("Ocorreu um erro ao adicionar o item.");
+              return;
+            }
+
+            // só faz .json() se for mesmo JSON
+            const ct = (resp.headers.get("content-type") || "").toLowerCase();
+            if (!ct.includes("application/json")) {
+              // fallback: vai à página do carrinho
+              window.location.href = "/Carrinhos/MeuCarrinho";
+              return;
+            }
+
+            const body = await resp.json();
+            const total = typeof body === "number" ? body : (body.total ?? 0);
+
+            const badge = document.getElementById("totalCar");
+            if (badge) badge.textContent = total;
+
+          
+          } catch (err) {
+            console.error(err);
+            alert("Não foi possível adicionar o item agora.");
+          }
+        }
+    </script>
+}
