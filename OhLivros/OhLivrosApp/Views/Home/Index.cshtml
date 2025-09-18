@@ -142,6 +142,7 @@
           const userGuid = usernameEl ? usernameEl.innerText.trim() : "";
           console.log("userGuid:", userGuid);
           if (!userGuid) {
+            alert("Precisa de iniciar sessão para adicionar ao carrinho.");
             window.location.href = "/Identity/Account/Login?returnUrl=" + encodeURIComponent(location.pathname + location.search);
             return; // <- importante
           }
@@ -153,6 +154,7 @@
 
             // não autenticado / redirect do Identity
             if (resp.status === 401 || resp.redirected) {
+              alert("Precisa de iniciar sessão para adicionar ao carrinho.");
               window.location.href = "/Identity/Account/Login?returnUrl=" + encodeURIComponent(location.pathname + location.search);
               return;
             }

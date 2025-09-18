@@ -30,11 +30,11 @@
                         <td>
                             @if (string.IsNullOrEmpty(item.Livro.Imagem))
                             {
-                                <img src="~/images/NoImage.png" style="width:80px;height:100px" alt="Sem imagem" />
+                                <img src="~/imagens/sem-capa.png" style="width:80px;height:100px" alt="Sem imagem" />
                             }
                             else
                             {
-                                <img src="~/images/@item.Livro.Imagem" style="width:80px;height:100px" alt="@item.Livro.Titulo" />
+                                <img src="~/imagens/@item.Livro.Imagem" style="width:80px;height:100px" alt="@item.Livro.Titulo" />
                             }
                         </td>
                         <td>@item.Livro.Genero?.Nome</td>

@@ -113,7 +113,7 @@ namespace OhLivrosApp.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken] // protege submissão do formulário
-        public async Task<IActionResult> Checkout(Encomenda model)
+        public async Task<IActionResult> Checkout([Bind("MetodoPagamento")] Encomenda model)
         {
             if (!ModelState.IsValid) return View(model);
 
@@ -125,6 +125,17 @@ namespace OhLivrosApp.Controllers
                 TempData["successMessage"] = "Encomenda criada com sucesso.";
                 return RedirectToAction(nameof(SucessoEncomenda));
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                ModelState.AddModelError(string.Empty, "Utilizador não iniciou sessão");
+                return View(model);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, "O carrinho está vazio");
+                return View(model);
+            }
+
             catch (Exception ex)
             {
                 // ponto crítico: transação no repositório pode fazer rollback

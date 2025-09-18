@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OhLivrosApp.Constantes;
 using OhLivrosApp.Data;
 using OhLivrosApp.Models;
 using System.Security.Claims;
@@ -195,6 +196,9 @@ namespace OhLivrosApp.Repositorios
                 // 3. Criar encomenda principal (cabecalho)
                 encomenda.DataCriacao = DateTime.Now;
                 encomenda.CompradorFK = utilizadorId;
+                encomenda.Pago = false;
+                encomenda.Estado = Estados.Pendente;        // enum
+
                 await _context.Encomendas.AddAsync(encomenda);
                 await _context.SaveChangesAsync();
 
@@ -206,7 +210,8 @@ namespace OhLivrosApp.Repositorios
                         LivroFK = item.LivroFK,
                         EncomendaFK = encomenda.Id,
                         Quantidade = item.Quantidade,
-                        PrecoUnitario = item.PrecoUnitario
+                        PrecoUnitario = item.PrecoUnitario,
+                        Encomenda = encomenda
                     });
                 }
 
@@ -228,32 +233,6 @@ namespace OhLivrosApp.Repositorios
         /// Faz a ponte entre Identity (GUID string) e Utilizador (int).
         /// Procura em Utilizadores.UserName o Id do IdentityUser.
         /// </summary>
-
-        //private async Task<int> GetUserIdAsync()
-        //{
-        //    var ctx = _http.HttpContext;
-        //    var principal = ctx?.User;
-
-        //    if (principal?.Identity?.IsAuthenticated != true)
-        //        return 0;
-
-        //    // GUID do Identity (NameIdentifier)
-        //    var identityId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        //    if (string.IsNullOrEmpty(identityId)) return 0;
-
-        //    // match com a tua tabela (UserName guarda o GUID)
-        //    var utilizador = await _context.Utilizadores
-        //        .AsNoTracking()
-        //        .FirstOrDefaultAsync(u => u.UserName.Trim() == identityId.Trim());
-
-        //    if (utilizador == null)
-        //        _logger.LogWarning("Utilizador não encontrado na tabela Utilizadores. IdentityId: {id}", identityId);
-        //    else
-        //        _logger.LogInformation("Utilizador {nome} encontrado com Id interno {id}", utilizador.Nome, utilizador.Id);
-
-        //    return utilizador?.Id ?? 0;
-        //}
-
         private async Task<int> GetUserIdAsync()
         {
             var ctx = _http.HttpContext;
