@@ -5,197 +5,208 @@ using OhLivrosApp.Models;
 
 namespace OhLivrosApp.Repositorios
 {
+    /// <summary>
+    /// Repositório para gerir o carrinho de compras:
+    /// - Adicionar e remover itens
+    /// - Obter carrinho completo do utilizador
+    /// - Contar itens
+    /// - Checkout (criação de encomenda)
+    /// </summary>
     public class CarrinhoRepositorio : ICarrinhoRepositorio
     {
-        private readonly ApplicationDbContext _db;
+        private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _http;
 
-        public CarrinhoRepositorio(ApplicationDbContext db, IHttpContextAccessor httpContextAccessor,
-            UserManager<IdentityUser> userManager)
+        public CarrinhoRepositorio(ApplicationDbContext context, IHttpContextAccessor http, UserManager<IdentityUser> userManager)
         {
-            _db = db;
+            _context = context;
             _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
+            _http = http;
         }
 
         /// <summary>
-        /// Adiciona um livro ao carrinho do utilizador
+        /// Adiciona um livro ao carrinho do utilizador autenticado.
+        /// - Se não existir carrinho → cria
+        /// - Se livro já existir → incrementa quantidade
+        /// - Se for novo → cria detalhe
+        /// - Tudo dentro de transação para garantir rollback
         /// </summary>
         public async Task<int> AdicionarItem(int livroId, int qtd)
         {
-            int utilizadorId = GetUserId();
-            using var transaction = await _db.Database.BeginTransactionAsync();
+            var utilizadorId = await GetUserIdAsync();
+            if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
 
-            if (utilizadorId == 0)
-                throw new UnauthorizedAccessException("Utilizador não está autenticado");
+            await using var tx = await _context.Database.BeginTransactionAsync();
 
-            var carrinho = await GetCarrinho(utilizadorId);
-
-            if (carrinho is null)
+            try
             {
-                carrinho = new Carrinho { DonoFK = utilizadorId };
-                _db.Carrinhos.Add(carrinho);
-            }
+                // garante que há carrinho para este utilizador
+                var carrinho = await GetCarrinho(utilizadorId)
+                               ?? (await _context.Carrinhos.AddAsync(new Carrinho { DonoFK = utilizadorId })).Entity;
+                await _context.SaveChangesAsync();
 
-            await _db.SaveChangesAsync();
+                // verifica se o livro já está no carrinho
+                var item = await _context.DetalhesCarrinhos
+                                    .FirstOrDefaultAsync(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId);
 
-            // detalhe do carrinho
-            var item = _db.DetalhesCarrinhos
-                          .FirstOrDefault(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId);
-
-            if (item is not null)
-            {
-                item.Quantidade += qtd;
-            }
-            else
-            {
-                var livro = _db.Livros.Find(livroId)
-                            ?? throw new ArgumentException("Livro não encontrado");
-
-                item = new DetalheCarrinho
+                if (item is not null)
                 {
-                    LivroFK = livroId,
-                    CarrinhoFK = carrinho.Id,
-                    Quantidade = qtd,
-                    PrecoUnitario = livro.Preco
-                };
-                _db.DetalhesCarrinhos.Add(item);
+                    item.Quantidade += qtd; // já existe → incrementa 
+                }
+                else
+                {
+                    // cria detalhe novo
+                    var livro = await _context.Livros.FindAsync(livroId)
+                               ?? throw new ArgumentException("Livro não encontrado");
+
+                    await _context.DetalhesCarrinhos.AddAsync(new DetalheCarrinho
+                    {
+                        LivroFK = livroId,
+                        CarrinhoFK = carrinho.Id,
+                        Quantidade = qtd,
+                        PrecoUnitario = (decimal)livro.Preco
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return await GetTotalItensCarrinho(utilizadorId);
             }
-
-            await _db.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return await GetTotalItensCarrinho(utilizadorId);
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         /// <summary>
-        /// Remove um livro do carrinho
+        /// Remove 1 unidade de um livro do carrinho.
+        /// - Se quantidade > 1 → decrementa
+        /// - Se quantidade = 1 → remove item
         /// </summary>
         public async Task<int> RemoverItem(int livroId)
         {
-            int utilizadorId = GetUserId();
+            var utilizadorId = await GetUserIdAsync();
+            if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
 
-            if (utilizadorId == 0)
-                throw new UnauthorizedAccessException("Utilizador não está autenticado");
+            var carrinho = await GetCarrinho(utilizadorId) ?? throw new InvalidOperationException("Carrinho inválido");
 
-            var carrinho = await GetCarrinho(utilizadorId);
-            if (carrinho is null)
-                throw new InvalidOperationException("Carrinho inválido");
+            var item = await _context.DetalhesCarrinhos
+                                .FirstOrDefaultAsync(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId)
+                      ?? throw new InvalidOperationException("Item não existe no carrinho");
 
-            var item = _db.DetalhesCarrinhos
-                          .FirstOrDefault(a => a.CarrinhoFK == carrinho.Id && a.LivroFK == livroId);
+            if (item.Quantidade > 1) item.Quantidade--;
+            else _context.DetalhesCarrinhos.Remove(item);
 
-            if (item is null)
-                throw new InvalidOperationException("Item não existe no carrinho");
-
-            if (item.Quantidade == 1)
-                _db.DetalhesCarrinhos.Remove(item);
-            else
-                item.Quantidade--;
-
-            await _db.SaveChangesAsync();
-
+            await _context.SaveChangesAsync();
             return await GetTotalItensCarrinho(utilizadorId);
         }
 
         /// <summary>
-        /// Obtém o carrinho completo do utilizador logado
+        /// Devolve o carrinho completo do utilizador autenticado,
+        /// incluindo detalhes → livros → género.
         /// </summary>
         public async Task<Carrinho?> GetCarrinhoUtilizador()
         {
-            int utilizadorId = GetUserId();
-            if (utilizadorId == 0)
-                throw new InvalidOperationException("Utilizador inválido");
+            var utilizadorId = await GetUserIdAsync();
+            if (utilizadorId == 0) throw new InvalidOperationException("Utilizador inválido");
 
-            return await _db.Carrinhos
+            return await _context.Carrinhos
                             .Include(c => c.DetalhesCarrinho)
-                            .ThenInclude(dc => dc.Livro)
-                            .ThenInclude(l => l.Genero)
-                            .Where(c => c.DonoFK == utilizadorId)
+                                .ThenInclude(dc => dc.Livro)
+                                    .ThenInclude(l => l.Genero)
                             .AsNoTracking()
-                            .FirstOrDefaultAsync();
-        }
-
-        /// <summary>
-        /// Obtém o carrinho pelo dono
-        /// </summary>
-        public async Task<Carrinho?> GetCarrinho(int utilizadorId)
-        {
-            return await _db.Carrinhos
                             .FirstOrDefaultAsync(c => c.DonoFK == utilizadorId);
         }
 
         /// <summary>
-        /// Conta os itens no carrinho do utilizador
+        /// Obtém carrinho pelo DonoFK.
+        /// </summary>
+        public Task<Carrinho?> GetCarrinho(int utilizadorId)
+            => _context.Carrinhos.FirstOrDefaultAsync(c => c.DonoFK == utilizadorId);
+
+        /// <summary>
+        /// Conta o total de unidades no carrinho (somatório de Quantidade).
         /// </summary>
         public async Task<int> GetTotalItensCarrinho(int utilizadorId = 0)
         {
-            if (utilizadorId == 0)
-                utilizadorId = GetUserId();
+            if (utilizadorId == 0) utilizadorId = await GetUserIdAsync();
 
-            return await _db.Carrinhos
-                            .Include(c => c.DetalhesCarrinho)
-                            .Where(c => c.DonoFK == utilizadorId)
-                            .SelectMany(c => c.DetalhesCarrinho)
-                            .CountAsync();
+            var carrinhoId = await _context.Carrinhos
+                                      .Where(c => c.DonoFK == utilizadorId)
+                                      .Select(c => (int?)c.Id)
+                                      .FirstOrDefaultAsync();
+
+            if (carrinhoId is null) return 0;
+
+            return await _context.DetalhesCarrinhos
+                            .Where(dc => dc.CarrinhoFK == carrinhoId.Value)
+                            .SumAsync(dc => (int?)dc.Quantidade) ?? 0;
         }
 
         /// <summary>
-        /// Faz o checkout do carrinho
+        /// Checkout do carrinho:
+        /// - Cria encomenda + detalhes
+        /// - Esvazia carrinho
+        /// - Tudo numa transação
         /// </summary>
         public async Task<bool> Checkout(Encomenda encomenda)
         {
-            using var transaction = await _db.Database.BeginTransactionAsync();
+            await using var tx = await _context.Database.BeginTransactionAsync();
 
-            int utilizadorId = GetUserId();
-            if (utilizadorId == 0)
-                throw new UnauthorizedAccessException("Utilizador não autenticado");
-
-            var carrinho = await GetCarrinho(utilizadorId);
-            if (carrinho is null)
-                throw new InvalidOperationException("Carrinho inválido");
-
-            var itens = _db.DetalhesCarrinhos
-                           .Where(a => a.CarrinhoFK == carrinho.Id)
-                           .ToList();
-
-            if (itens.Count == 0)
-                throw new InvalidOperationException("Carrinho vazio");
-
-            // guarda encomenda
-            encomenda.DataCriacao = DateTime.Now;
-            encomenda.CompradorFK = utilizadorId;
-            _db.Encomendas.Add(encomenda);
-            await _db.SaveChangesAsync();
-
-            foreach (var item in itens)
+            try
             {
-                var detalhe = new DetalheEncomenda
+                var utilizadorId = await GetUserIdAsync();
+                if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
+
+                var carrinho = await GetCarrinho(utilizadorId) ?? throw new InvalidOperationException("Carrinho inválido");
+
+                var itens = await _context.DetalhesCarrinhos.Where(a => a.CarrinhoFK == carrinho.Id).ToListAsync();
+                if (itens.Count == 0) throw new InvalidOperationException("Carrinho vazio");
+
+                // cria encomenda principal
+                encomenda.DataCriacao = DateTime.Now;
+                encomenda.CompradorFK = utilizadorId;
+                await _context.Encomendas.AddAsync(encomenda);
+                await _context.SaveChangesAsync();
+
+                // cria detalhes da encomenda
+                foreach (var item in itens)
                 {
-                    LivroFK = item.LivroFK,
-                    EncomendaFK = encomenda.Id,
-                    Quantidade = item.Quantidade,
-                    PrecoUnitario = item.PrecoUnitario
-                };
-                _db.DetalhesEncomendas.Add(detalhe);
+                    await _context.DetalhesEncomendas.AddAsync(new DetalheEncomenda
+                    {
+                        LivroFK = item.LivroFK,
+                        EncomendaFK = encomenda.Id,
+                        Quantidade = item.Quantidade,
+                        PrecoUnitario = item.PrecoUnitario
+                    });
+                }
+
+                // limpa carrinho
+                _context.DetalhesCarrinhos.RemoveRange(itens);
+                await _context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+                return true;
             }
-
-            // esvaziar carrinho
-            _db.DetalhesCarrinhos.RemoveRange(itens);
-            await _db.SaveChangesAsync();
-
-            await transaction.CommitAsync();
-            return true;
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
-        private int GetUserId()
+        /// <summary>
+        /// Faz a ponte entre Identity (GUID string) e Utilizador (int).
+        /// Procura em Utilizadores.UserName o Id do IdentityUser.
+        /// </summary>
+        private async Task<int> GetUserIdAsync()
         {
-            var principal = _httpContextAccessor.HttpContext?.User;
-            var userId = _userManager.GetUserId(principal);
-
-            // ⚠️ O teu Utilizador.Id é int, por isso precisas mapear IdentityUser → Utilizador
-            var utilizador = _db.Utilizadores.FirstOrDefault(u => u.UserName == userId);
+            var principal = _http.HttpContext?.User;
+            var identityId = _userManager.GetUserId(principal); // GUID string
+            var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.UserName == identityId);
             return utilizador?.Id ?? 0;
         }
     }
