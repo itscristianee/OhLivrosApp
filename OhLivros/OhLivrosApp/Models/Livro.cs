@@ -42,6 +42,9 @@ namespace OhLivrosApp.Models
         [Display(Name = "Preço")]
         public decimal Preco { get; set; }
 
+        // 1:1 
+        public Stock Stock { get; set; }
+
         // <summary>
         /// FK para a tabela dos Géneros
         /// </summary>

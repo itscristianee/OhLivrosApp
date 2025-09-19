@@ -1,7 +1,95 @@
-﻿
+﻿@model IEnumerable<OhLivrosApp.Models.Encomenda>
+@using System.Globalization
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using OhLivrosApp.Constantes
+@using OhLivrosApp.Models.DTOs
+
 @{
-    ViewData["Title"] = "Todas";
+    ViewData["Title"] = "Encomendas";
+
+    var cultura = new CultureInfo("pt-PT");
+
+    string Nome(Enum v)
+    {
+        var m = v.GetType().GetMember(v.ToString()).First();
+        var attr = m.GetCustomAttribute<DisplayAttribute>();
+        return attr?.GetName() ?? v.ToString();
+    }
 }
 
-<h1>Todas</h1>
+<div class="mt-2 w-100">
+    <h4>Encomendas</h4>
 
+    @if (Model?.Any() == true)
+    {
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Contacto</th>
+                    <th>Morada</th>
+                    <th>Pagamento</th>
+                    <th>Estado</th>
+                    <th class="text-end">Total</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var enc in Model)
+            {
+                var total = enc.DetalhesEncomenda?.Sum(x => x.PrecoUnitario * x.Quantidade) ?? 0m;
+                <tr>
+                    <td>@enc.Id</td>
+                    <td>@enc.DataCriacao.ToLocalTime().ToString("dd-MM-yyyy")</td>
+                    <td>@enc.Comprador?.Nome</td>
+                    <td>@enc.Comprador?.Telemovel</td>
+                    <td>@($"{enc.Comprador?.Morada}, {enc.Comprador?.CodPostal} {enc.Comprador?.Pais}")</td>
+                    <td>@Nome(enc.MetodoPagamento) | @(enc.Pago ? "Pago" : "Não pago")</td>
+                    <td>@Nome(enc.Estado)</td>
+                    <td class="text-end">@total.ToString("C", cultura)</td>
+                    <td class="text-nowrap">
+                        <button type="button"
+                                class="btn btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-@enc.Id">
+                            Detalhes
+                        </button>
+
+                        <a asp-controller="EncomendasAdmin"
+                           asp-action="AtualizarEstado"
+                           asp-route-id="@enc.Id"
+                           class="btn btn-sm btn-outline-info">
+                            Alterar estado
+                        </a>
+
+                        <form asp-controller="EncomendasAdmin"
+                              asp-action="AlternarPagamento"
+                              asp-route-id="@enc.Id"
+                              method="post"
+                              class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                Alternar pagamento
+                            </button>
+                        </form>
+
+                        @await Html.PartialAsync(
+                            "/Views/EncomendasAdmin/_DetalheEncomendaModal.cshtml",
+                            new DetalheEncomendaModalDTO {
+                                IdDiv = enc.Id.ToString(),
+                                Detalhes = enc.DetalhesEncomenda
+                            })
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <h5>Sem encomendas</h5>
+    }
+</div>

@@ -1,0 +1,64 @@
+﻿@model DetalheEncomendaModalDTO
+@using OhLivrosApp.Models.DTOs
+@using System.Globalization
+
+<div class="modal fade" id="modal-@Model.IdDiv" tabindex="-1" aria-labelledby="detalheEncomendaLabel-@Model.IdDiv" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalheEncomendaLabel-@Model.IdDiv">Detalhes da Encomenda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <div class="modal-body">
+                @if (Model?.Detalhes?.Any() == true)
+                {
+                    <table class="table table-striped align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Livro</th>
+                                <th>Género</th>
+                                <th class="text-end">Preço</th>
+                                <th class="text-end">Quantidade</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Detalhes)
+                            {
+                                var preco = item.PrecoUnitario;
+                                var qtd = item.Quantidade;
+                                var total = qtd * preco;
+
+                                <tr>
+                                    <td>@item.Livro.Titulo</td>
+                                    <td>@item.Livro.Genero?.Nome</td>
+                                    <td class="text-end">@preco.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</td>
+                                    <td class="text-end">@qtd</td>
+                                    <td class="text-end">@total.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" class="text-end">Subtotal</th>
+                                <th class="text-end">
+                                    @Model.Detalhes.Sum(d => d.Quantidade * d.PrecoUnitario)
+                                    .ToString("C", cultura)
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-muted">Sem linhas nesta encomenda.</div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>

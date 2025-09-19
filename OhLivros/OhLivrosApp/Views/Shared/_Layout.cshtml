@@ -26,28 +26,17 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/Home/Sobre">Sobre</a>
                     </li>
-                    @*<li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="#">Action</a>
-                            <a class="dropdown-item" href="#">Another action</a>
-                            <a class="dropdown-item" href="#">Something else here</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#">Separated link</a>
-                        </div>
-                    </li>*@
-                </ul>
-                <partial name="_LoginPartial" />
-
-                    @if (User.IsInRole(nameof(Perfis.Administrador)))
-                    {
+                
+                  @if (User.IsInRole(nameof(Perfis.Administrador)))
+                    { 
                         <li class="nav-item">
-                            <a class="nav-link" href="/AdminOperations/Dashboard">Dashboard</a>
-                        </li>
-                        @*  <li class="nav-item">
                           <a class="nav-link" 
-                          href="/AdminOperations/AllOrders">Orders</a>
+                          href="/EncomendasAdmin/Todas">Encomendas</a>
                         </li>
+                        @*<li class="nav-item">
+                            <a class="nav-link" href="/EncomendasAdmin/Dashboard">Dashboard</a>
+                        </li>
+                         
 
                         <li class="nav-item">
                             <a class="nav-link" href="/Stock/Index">Stock</a>
@@ -61,12 +50,7 @@
                             <a class="nav-link" href="/Book/Index">Books</a>
                         </li> *@
                     }
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="/Home/Sobre">Sobre</a>
-                    </li>
-                    
-                </ul>
+                    </ul>
                 <partial name="_LoginPartial" />
             </div>
         </div>
