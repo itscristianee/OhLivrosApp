@@ -15,9 +15,12 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
 
 //para permitir injeção de dependência nos controladores.
 builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
+builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
+builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>();
 
 var app = builder.Build();
 
@@ -32,7 +35,7 @@ else
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRouting();
 

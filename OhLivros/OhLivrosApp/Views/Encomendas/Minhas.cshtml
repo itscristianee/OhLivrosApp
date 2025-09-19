@@ -1,0 +1,99 @@
+﻿@model IEnumerable<OhLivrosApp.Models.Encomenda>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Minhas Encomendas";
+    var cultura = new CultureInfo("pt-PT");
+}
+
+<div class="mt-2" style="width:100%">
+    <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-primary my-2">Voltar</a>
+
+    <h4>Minhas Encomendas</h4>
+
+    @if (Model != null && Model.Any())
+    {
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Data</th>
+                    <th>Estado</th>
+                    <th>Pagamento</th>
+                    <th class="text-end">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var enc in Model)
+                {
+                    var totalEnc = enc.DetalhesEncomenda?.Sum(i => i.PrecoUnitario * i.Quantidade) ?? 0m;
+
+                    <tr>
+                        <td>@enc.Id</td>
+                        <td>@enc.DataCriacao.ToLocalTime().ToString("dd-MM-yyyy")</td>
+                        <td>@enc.Estado</td>
+                        <td>@(enc.Pago ? "Pago" : "Não Pago")</td>
+                        <td class="text-end">@totalEnc.ToString("C", cultura)</td>
+                        <td class="text-end">
+                            <a asp-controller="Encomendas" asp-action="Detalhe" asp-route-id="@enc.Id"
+                               class="btn btn-sm btn-outline-primary">Detalhe</a>
+                        </td>
+                    </tr>
+
+                    if (enc.DetalhesEncomenda != null && enc.DetalhesEncomenda.Count > 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="p-0">
+                                <table class="table table-sm table-striped mb-0 align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Livro</th>
+                                            <th>Imagem</th>
+                                            <th>Género</th>
+                                            <th class="text-end">Preço Unitário</th>
+                                            <th class="text-end">Qtd</th>
+                                            <th class="text-end">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in enc.DetalhesEncomenda)
+                                        {
+                                            var subtotal = item.PrecoUnitario * item.Quantidade;
+                                            <tr>
+                                                <td>@item.Livro?.Titulo</td>
+                                                <td>
+                                                    @if (string.IsNullOrEmpty(item.Livro?.Imagem))
+                                                    {
+                                                        <img src="~/imagens/sem-capa.png" style="width:80px;height:100px" alt="Sem imagem" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <img src="~/imagens/@item.Livro.Imagem" style="width:80px;height:100px" alt="@item.Livro.Titulo" />
+                                                    }
+                                                </td>
+                                                <td>@item.Livro?.Genero?.Nome</td>
+                                                <td class="text-end">@item.PrecoUnitario.ToString("C", cultura)</td>
+                                                <td class="text-end">@item.Quantidade</td>
+                                                <td class="text-end">@subtotal.ToString("C", cultura)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="5" class="text-end">Total</th>
+                                            <th class="text-end">@totalEnc.ToString("C", cultura)</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <h5>Sem encomendas</h5>
+    }
+</div>

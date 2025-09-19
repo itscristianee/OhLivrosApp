@@ -235,15 +235,12 @@ namespace OhLivrosApp.Data.Migrations
                     b.Property<int>("DonoFK")
                         .HasColumnType("int");
 
-                    b.Property<int>("DonoId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("Eliminado")
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DonoId");
+                    b.HasIndex("DonoFK");
 
                     b.ToTable("Carrinhos");
                 });
@@ -326,10 +323,8 @@ namespace OhLivrosApp.Data.Migrations
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
-                    b.Property<string>("MetodoPagamento")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                    b.Property<int>("MetodoPagamento")
+                        .HasColumnType("int");
 
                     b.Property<bool>("Pago")
                         .HasColumnType("bit");
@@ -493,7 +488,7 @@ namespace OhLivrosApp.Data.Migrations
                 {
                     b.HasOne("OhLivrosApp.Models.Utilizador", "Dono")
                         .WithMany("Carrinhos")
-                        .HasForeignKey("DonoId")
+                        .HasForeignKey("DonoFK")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
