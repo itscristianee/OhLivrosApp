@@ -31,9 +31,8 @@ namespace OhLivrosApp.Models
         /// Método de pagamento escolhido
         /// </summary>
         [Required(ErrorMessage = "O {0} é de preenchimento obrigatório")]
-        [MaxLength(30, ErrorMessage = "O {0} não pode ter mais de {1} caracteres")]
         [Display(Name = "Método de Pagamento")]
-        public string? MetodoPagamento { get; set; }
+        public MetodosPagamento? MetodoPagamento { get; set; }
 
         /// <summary>
         /// Indica se a encomenda já foi paga
@@ -72,10 +71,7 @@ namespace OhLivrosApp.Models
         /// </summary>
         public List<DetalheEncomenda> DetalhesEncomenda { get; set; } = [];
 
-        [NotMapped]
-        [Display(Name = "Total")]
-        public decimal Total => DetalhesEncomenda?.Sum(d => d.PrecoUnitario * d.Quantidade) ?? 0m;
-
+        
     }
 
 

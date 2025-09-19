@@ -1,4 +1,5 @@
 ﻿using OhLivrosApp.Models;
+using OhLivrosApp.Models.DTO;
 
 namespace OhLivrosApp
 {
@@ -33,5 +34,8 @@ namespace OhLivrosApp
         /// Realiza o checkout (gera encomenda + esvazia carrinho)
         /// </summary>
         Task<bool> Checkout(Encomenda encomenda);
+
+        Task<CheckoutModelDTO> PrepararCheckoutAsync();
+
     }
 }

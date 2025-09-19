@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using OhLivrosApp.Constantes;
+using System.ComponentModel.DataAnnotations;
 
 namespace OhLivrosApp.Models.DTO
 {
@@ -8,7 +9,7 @@ namespace OhLivrosApp.Models.DTO
         [Required(ErrorMessage = "O {0} é obrigatório")]
         [MaxLength(30)]
         [Display(Name = "Método de Pagamento")]
-        public string? MetodoPagamento { get; set; }
+        public MetodosPagamento? MetodoPagamento { get; set; }
 
         public Utilizador Utilizador { get; set; } = null!;
         public List<ResumoCarrinhoItem> Itens { get; set; } = new();
