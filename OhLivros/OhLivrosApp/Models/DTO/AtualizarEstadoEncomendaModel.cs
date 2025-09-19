@@ -1,10 +1,16 @@
-﻿using OhLivrosApp.Constantes;
+﻿// Models/ViewModels/AtualizarEstadoEncomendaModel.cs
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using OhLivrosApp.Constantes;
 
-namespace OhLivrosApp.Models.DTO
+public class AtualizarEstadoEncomendaModel
 {
-    public class AtualizarEstadoEncomendaModel
-    {
-        public int EncomendaId { get; set; }
-        public Estados Estado { get; set; }
-    }
+    public int EncomendaId { get; set; }
+
+    [Required(ErrorMessage = "Selecione um estado.")]
+    [Display(Name = "Estado da encomenda")]
+    public Estados Estado { get; set; }
+
+    public IEnumerable<SelectListItem> ListaEstados { get; set; } = new List<SelectListItem>();
 }

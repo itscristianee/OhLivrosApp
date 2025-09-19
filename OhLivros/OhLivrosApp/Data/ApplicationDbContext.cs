@@ -47,5 +47,10 @@ namespace OhLivrosApp.Data
         /// tabela DetalhesEncomendas na BD
         /// </summary>
         public DbSet<DetalheEncomenda> DetalhesEncomendas { get; set; }
+
+        /// <summary>
+        /// tabela Stocks na BD
+        /// </summary>
+        public DbSet<Stock> Stocks { get; set; }
     }
 }

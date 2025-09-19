@@ -157,6 +157,10 @@ namespace OhLivrosApp.Areas.Identity.Pages.Account
             {
                 // PONTE CORRETA: guarda o Id do Identity no teu Utilizador
                 Input.Utilizador.UserName = user.Id;
+                
+                // todo novo utilizador entra no role "Utilizador"
+                await _userManager.AddToRoleAsync(user, nameof(Perfis.Utilizador));
+
                 _context.Add(Input.Utilizador);
                 await _context.SaveChangesAsync();
 

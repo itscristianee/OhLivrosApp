@@ -28,14 +28,15 @@
                     </li>
                 
                   @if (User.IsInRole(nameof(Perfis.Administrador)))
-                    {
+                    { 
                         <li class="nav-item">
-                            <a class="nav-link" href="/AdminOperations/Dashboard">Dashboard</a>
-                        </li>
-                        @*  <li class="nav-item">
                           <a class="nav-link" 
-                          href="/AdminOperations/AllOrders">Orders</a>
+                          href="/EncomendasAdmin/Todas">Encomendas</a>
                         </li>
+                        @*<li class="nav-item">
+                            <a class="nav-link" href="/EncomendasAdmin/Dashboard">Dashboard</a>
+                        </li>
+                         
 
                         <li class="nav-item">
                             <a class="nav-link" href="/Stock/Index">Stock</a>

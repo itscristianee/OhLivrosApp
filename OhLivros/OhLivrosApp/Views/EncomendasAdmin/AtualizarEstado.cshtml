@@ -1,0 +1,31 @@
+﻿@using OhLivrosApp.Models.DTO
+@model UpdateEstadoEncomendaModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Atualizar estado da encomenda";
+}
+
+<h2>Atualizar estado da encomenda</h2>
+<a class="btn btn-secondary my-2" asp-action="Todas">Voltar</a>
+
+<form asp-action="AtualizarEstado" method="post" style="max-width:560px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="EncomendaId" />
+    <div class="mb-3">
+        <label asp-for="Estado" class="form-label"></label>
+        <select asp-for="Estado" asp-items="Model.EstadosList" class="form-select">
+            <option value="">-- Selecionar estado --</option>
+        </select>
+        <span class="text-danger" asp-validation-for="Estado"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Atualizar</button>
+
+    @if (TempData["msg"] is string msg && !string.IsNullOrWhiteSpace(msg))
+    {
+        <div class="alert alert-info mt-3">@msg</div>
+    }
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
