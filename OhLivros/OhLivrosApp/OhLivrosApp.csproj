@@ -23,4 +23,11 @@
     <Folder Include="wwwroot\css\" />
   </ItemGroup>
 
+  <PropertyGroup>
+  <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  <!-- evita centenas de warnings de comentários ausentes -->
+  <NoWarn>$(NoWarn);1591</NoWarn>
+</PropertyGroup>
+
+
 </Project>

@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using OhLivrosApp.Constantes;
-using OhLivrosApp.Repositorios;
+using OhLivrosApp.Data;
 using OhLivrosApp.Models;
-using OhLivrosApp.Servicos;
 using OhLivrosApp.Models.DTO;
+using OhLivrosApp.Repositorios;
+using OhLivrosApp.Servicos;
 
 namespace OhLivrosApp.Controllers
 {
@@ -14,14 +17,19 @@ namespace OhLivrosApp.Controllers
     {
         private readonly ILivroRepositorio _livroRepo;
         private readonly IGeneroRepositorio _generoRepo;
-        private readonly IFicheiroServico _ficheiroServico; 
+        private readonly IFicheiroServico _ficheiroServico;
+        private readonly ApplicationDbContext _db;
 
 
-        public LivrosController(ILivroRepositorio livroRepo, IGeneroRepositorio generoRepo, IFicheiroServico ficheiroServico)
+        private readonly IHubContext<LojaHub> _hub;
+
+        public LivrosController(ILivroRepositorio livroRepo, IGeneroRepositorio generoRepo, IFicheiroServico ficheiroServico, IHubContext<LojaHub> hub, ApplicationDbContext db)
         {
             _livroRepo = livroRepo;
             _generoRepo = generoRepo;
             _ficheiroServico = ficheiroServico;
+            _hub = hub;
+            _db = db;
         }
 
         // GET: /Livros
@@ -224,5 +232,32 @@ namespace OhLivrosApp.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // Cria uma conexão SignalR com o Hub no servidor em Program.cs:
+        //   app.MapHub<StockHub>("/hubs/stock");
+
+        [HttpPost]
+        public async Task<IActionResult> AtualizarStock(int id, int novoStock)
+        {
+            var stock = await _db.Stocks.SingleOrDefaultAsync(s => s.LivroFK == id);
+            if (stock == null)
+            {
+                stock = new Stock { LivroFK = id, Quantidade = novoStock };
+                _db.Stocks.Add(stock);
+            }
+            else
+            {
+                stock.Quantidade = novoStock;
+            }
+
+            await _db.SaveChangesAsync();
+
+            await _hub.Clients.Group($"livro-{id}")
+                .SendAsync("StockAtualizado", new { livroId = id, stock = stock.Quantidade });
+
+            return Ok();
+        }
+
+
     }
 }
