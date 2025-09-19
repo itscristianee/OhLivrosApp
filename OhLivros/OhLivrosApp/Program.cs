@@ -24,10 +24,41 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+<<<<<<< HEAD
 // ============================
 // Identity + Roles (cookies por defeito)
 // ============================
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+=======
+builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()           
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
+
+//para permitir injeção de dependência nos controladores.
+builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
+builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
+builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>(); 
+builder.Services.AddScoped<IStockRepositorio, StockRepositorio>(); 
+builder.Services.AddScoped<ILivroRepositorio, LivroRepositorio>();
+builder.Services.AddScoped<IGeneroRepositorio, GeneroRepositorio>();
+
+builder.Services.AddTransient<IFicheiroServico, FicheiroServico>();
+
+// configurar o de uso de 'cookies'
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromSeconds(60);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+builder.Services.AddDistributedMemoryCache();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+>>>>>>> cookies
 {
     options.SignIn.RequireConfirmedAccount = true; // pode pôr false em dev
 })
