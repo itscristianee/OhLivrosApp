@@ -1,19 +1,17 @@
-﻿namespace OhLivrosApp.DTO;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record LivroListItemDTO(int Id, string Titulo, string Autor, string Genero, decimal Preco, string? Imagem);
-public record LivroDetailsDTO(int Id, string Titulo, string Autor, int GeneroFK, string Genero, decimal Preco, string? Imagem);
-
-public class LivroCreateDTO
+namespace OhLivrosApp.Models.DTO.Api
 {
-    public string Titulo { get; set; } = default!;
-    public string Autor { get; set; } = default!;
-    public int GeneroFK { get; set; }
-    public decimal Preco { get; set; }
-}
+    public record LivroListDTO(int Id, string Titulo, string Autor, string Genero, decimal Preco, string? ImagemUrl);
 
-public class LivroUpdateDTO : LivroCreateDTO
-{
-    public int Id { get; set; }
-}
+    public class LivroCreateDTO
+    {
+        [Required] public string Titulo { get; set; } = "";
+        [Required] public string Autor { get; set; } = "";
+        [Required] public int GeneroFK { get; set; }
+        [Range(0, 9999)] public decimal Preco { get; set; }
+        public string? Imagem { get; set; } // opcional se quiseres aceitar o nome do ficheiro
+    }
 
-public record GeneroDTO(int Id, string Nome);
+    public class LivroUpdateDTO : LivroCreateDTO { }
+}

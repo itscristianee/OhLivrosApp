@@ -1,84 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OhLivrosApp.Data;
-using OhLivrosApp.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using OhLivrosApp.Models.DTO;
 
-namespace OhLivrosApp.Controllers.API {
-   [Route("api/[controller]")]
-   [ApiController]
-   public class AuthController:ControllerBase {
+namespace OhLivrosApp.Controllers.Api
+{
+    public record LoginRequest(string Email, string Password);
 
-      private readonly ApplicationDbContext _context;
-      private readonly UserManager<IdentityUser> _userManager;
-      private readonly SignInManager<IdentityUser> _signInManager;
-      private readonly IConfiguration _config;
+    [ApiController]
+    [Route("api/auth")]
+    public class AuthController : ControllerBase
+    {
+        private readonly UserManager<IdentityUser> _users;
+        private readonly SignInManager<IdentityUser> _signIn;
+        private readonly IConfiguration _config;
 
-      public AuthController(ApplicationDbContext context,
-         UserManager<IdentityUser> userManager,
-         SignInManager<IdentityUser> signInManager,
-         IConfiguration config) {
-         _context=context;
-         _userManager=userManager;
-         _signInManager=signInManager;
-         _config=config;
-      }
+        public AuthController(UserManager<IdentityUser> users, SignInManager<IdentityUser> signIn, IConfiguration config)
+        {
+            _users = users;
+            _signIn = signIn;
+            _config = config;
+        }
 
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromBody] LoginRequest req)
+        {
+            var user = await _users.FindByEmailAsync(req.Email);
+            if (user == null) return Unauthorized();
 
-      [AllowAnonymous]
-      [HttpPost("login")]
-      public async Task<IActionResult> Login([FromBody] LoginDTO login) {
+            var ok = await _signIn.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: false);
+            if (!ok.Succeeded) return Unauthorized();
 
-         // procura pelo 'username' na base de dados, 
-         // para determinar se o utilizador existe
-         var user = await _userManager.FindByEmailAsync(login.Username);
-         if (user==null) return Unauthorized();
+            var roles = await _users.GetRolesAsync(user);
 
-         // se chego aqui, é pq o 'username' existe
-         // mas, a password é válida?
-         var result = await _signInManager.CheckPasswordSignInAsync(user,login.Password,false);
-         if (!result.Succeeded) return Unauthorized();
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? req.Email),
+                new Claim(JwtRegisteredClaimNames.Email, req.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+            claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-         // houve sucesso na autenticação
-         // vou gerar o 'token', associado ao utilizador
-         var token = GenerateJwtToken(login.Username);
+            var jwt = _config.GetSection("Jwt");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-         // devolvo o 'token'
-         return Ok(new { token });
-      }
+            var token = new JwtSecurityToken(
+                issuer: jwt["Issuer"],
+                audience: jwt["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds);
 
-      /// <summary>
-      /// gerar o Token
-      /// </summary>
-      /// <param name="username">nome da pessoa associada ao token</param>
-      /// <returns></returns>
-      private string GenerateJwtToken(string username) {
-         var claims = new[] {
-         new Claim(ClaimTypes.Name, username)
-     };
-
-         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(s: _config["Jwt:Key"]));
-         var creds = new SigningCredentials(key,SecurityAlgorithms.HmacSha256);
-
-         var token = new JwtSecurityToken(
-             issuer: _config["Jwt:Issuer"],
-             audience: _config["Jwt:Audience"],
-             claims: claims,
-             expires: DateTime.Now.AddHours(2),
-             signingCredentials: creds);
-
-         return new JwtSecurityTokenHandler().WriteToken(token);
-      }
-   }
+            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+        }
+    }
 }

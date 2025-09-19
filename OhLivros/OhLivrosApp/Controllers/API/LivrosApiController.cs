@@ -1,119 +1,136 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OhLivrosApp.Constantes;
-using OhLivrosApp.DTO;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using OhLivrosApp.Models;
+using OhLivrosApp.Models.DTO.Api;
 using OhLivrosApp.Repositorios;
+using OhLivrosApp.Constantes;
+using OhLivrosApp.Servicos;
 
-namespace OhLivrosApp.Controllers.Api;
-
-[ApiController]
-[Route("api/livros")]
-public class LivrosApiController : ControllerBase
+namespace OhLivrosApp.Controllers.Api
 {
-    private readonly ILivroRepositorio _livros;
-    private readonly IGeneroRepositorio _generos;
-
-    public LivrosApiController(ILivroRepositorio livros, IGeneroRepositorio generos)
+    [ApiController]
+    [Route("api/livros")]
+    public class LivrosApiController : ControllerBase
     {
-        _livros = livros;
-        _generos = generos;
-    }
+        private readonly ILivroRepositorio _livros;
+        private readonly IGeneroRepositorio _generos;
+        private readonly IFicheiroServico _ficheiros;
 
-    // GET: api/livros
-    [HttpGet]
-    [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<LivroListItemDTO>>> GetAll()
-    {
-        var data = await _livros.ObterTodosAsync();
-
-        var result = data.Select(l => new LivroListItemDTO(
-            l.Id,
-            l.Titulo,
-            l.Autor ?? "",
-            l.Genero?.Nome ?? "",
-            l.Preco,
-            l.Imagem
-        ));
-
-        return Ok(result);
-    }
-
-    // GET: api/livros/5
-    [HttpGet("{id:int}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<LivroDetailsDTO>> GetById(int id)
-    {
-        var l = await _livros.ObterPorIdAsync(id);
-        if (l is null) return NotFound();
-
-        var dto = new LivroDetailsDTO(
-            l.Id,
-            l.Titulo,
-            l.Autor ?? "",
-            l.GeneroFK,
-            l.Genero?.Nome ?? "",
-            l.Preco,
-            l.Imagem
-        );
-
-        return Ok(dto);
-    }
-
-    // POST: api/livros
-    [HttpPost]
-    [Authorize(Roles = nameof(Perfis.Administrador))]
-    public async Task<ActionResult<LivroDetailsDTO>> Create([FromBody] LivroCreateDTO dto)
-    {
-        // validação de género
-        var g = await _generos.ObterPorIdAsync(dto.GeneroFK);
-        if (g is null) return ValidationProblem("O género indicado não existe.");
-
-        var entity = new OhLivrosApp.Models.Livro
+        public LivrosApiController(ILivroRepositorio livros, IGeneroRepositorio generos, IFicheiroServico ficheiros)
         {
-            Titulo = dto.Titulo,
-            Autor = dto.Autor,
-            GeneroFK = dto.GeneroFK,
-            Preco = dto.Preco
-        };
+            _livros = livros;
+            _generos = generos;
+            _ficheiros = ficheiros;
+        }
 
-        await _livros.AdicionarAsync(entity);
+        // 1) TODOS PODEM VER A LISTA
+        [HttpGet]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<LivroListDTO>>> GetAll()
+        {
+            var data = await _livros.ObterTodosAsync();
+            var dtos = data.Select(l => new LivroListDTO(
+                l.Id,
+                l.Titulo,
+                l.Autor ?? string.Empty,
+                l.Genero?.Nome ?? "",
+                l.Preco,
+                string.IsNullOrWhiteSpace(l.Imagem) ? null : Url.Content($"~/images/{l.Imagem}")
+            ));
+            return Ok(dtos);
+        }
 
-        var result = new LivroDetailsDTO(entity.Id, entity.Titulo, entity.Autor ?? "", entity.GeneroFK, g.Nome, entity.Preco, entity.Imagem);
+        // 2) DETALHE: SÓ UTILIZADOR AUTENTICADO (user normal OU admin)
+        [HttpGet("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<LivroListDTO>> GetById(int id)
+        {
+            var l = await _livros.ObterPorIdAsync(id);
+            if (l == null) return NotFound();
 
-        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, result);
-    }
+            var dto = new LivroListDTO(
+                l.Id,
+                l.Titulo,
+                l.Autor ?? string.Empty,
+                l.Genero?.Nome ?? "",
+                l.Preco,
+                string.IsNullOrWhiteSpace(l.Imagem) ? null : Url.Content($"~/images/{l.Imagem}")
+            );
+            return Ok(dto);
+        }
 
-    // PUT: api/livros/5
-    [HttpPut("{id:int}")]
-    [Authorize(Roles = nameof(Perfis.Administrador))]
-    public async Task<IActionResult> Update(int id, [FromBody] LivroUpdateDTO dto)
-    {
-        if (id != dto.Id) return BadRequest("Id do URL e do corpo não coincidem.");
+        // 3) CRIAR: SÓ ADMIN
+        [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Perfis.Administrador))]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> Create([FromBody] LivroCreateDTO dto)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-        var entity = await _livros.ObterPorIdAsync(id);
-        if (entity is null) return NotFound();
+            var genero = await _generos.ObterPorIdAsync(dto.GeneroFK);
+            if (genero == null) return BadRequest("Género inválido.");
 
-        var g = await _generos.ObterPorIdAsync(dto.GeneroFK);
-        if (g is null) return ValidationProblem("O género indicado não existe.");
+            var livro = new Livro
+            {
+                Titulo = dto.Titulo,
+                Autor = dto.Autor,
+                GeneroFK = dto.GeneroFK,
+                Preco = dto.Preco,
+                Imagem = dto.Imagem
+            };
 
-        entity.Titulo = dto.Titulo;
-        entity.Autor = dto.Autor;
-        entity.GeneroFK = dto.GeneroFK;
-        entity.Preco = dto.Preco;
+            await _livros.AdicionarAsync(livro);
+            return CreatedAtAction(nameof(GetById), new { id = livro.Id }, new { livro.Id });
+        }
 
-        await _livros.AtualizarAsync(entity);
-        return NoContent();
-    }
+        // 4) ATUALIZAR: SÓ ADMIN
+        [HttpPut("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Perfis.Administrador))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> Update(int id, [FromBody] LivroUpdateDTO dto)
+        {
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-    // DELETE: api/livros/5
-    [HttpDelete("{id:int}")]
-    [Authorize(Roles = nameof(Perfis.Administrador))]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var entity = await _livros.ObterPorIdAsync(id);
-        if (entity is null) return NotFound();
+            var existente = await _livros.ObterPorIdAsync(id);
+            if (existente == null) return NotFound();
 
-        await _livros.RemoverAsync(entity);
-        return NoContent();
+            var genero = await _generos.ObterPorIdAsync(dto.GeneroFK);
+            if (genero == null) return BadRequest("Género inválido.");
+
+            existente.Titulo = dto.Titulo;
+            existente.Autor = dto.Autor;
+            existente.GeneroFK = dto.GeneroFK;
+            existente.Preco = dto.Preco;
+            if (!string.IsNullOrWhiteSpace(dto.Imagem))
+                existente.Imagem = dto.Imagem;
+
+            await _livros.AtualizarAsync(existente);
+            return NoContent();
+        }
+
+        // 5) ELIMINAR: SÓ ADMIN
+        [HttpDelete("{id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(Perfis.Administrador))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> Delete(int id)
+        {
+            var livro = await _livros.ObterPorIdAsync(id);
+            if (livro == null) return NotFound();
+
+            await _livros.RemoverAsync(livro);
+
+            if (!string.IsNullOrWhiteSpace(livro.Imagem))
+                _ficheiros.Apagar(livro.Imagem);
+
+            return NoContent();
+        }
     }
 }
