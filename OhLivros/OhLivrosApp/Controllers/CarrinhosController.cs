@@ -102,11 +102,25 @@ namespace OhLivrosApp.Controllers
         /// <summary>
         /// GET do Checkout — só apresenta o formulário de dados de entrega/pagamento.
         /// </summary>
-      
-            public IActionResult Checkout()
+
+        [HttpGet]
+        public async Task<IActionResult> Checkout()
+        {
+            try
             {
-                return View(new Encomenda());
+                var vm = await _carrinhoRepo.PrepararCheckoutAsync();
+                return View(vm);
             }
+            catch (UnauthorizedAccessException)
+            {
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["errorMessage"] = ex.Message;
+                return RedirectToAction(nameof(MeuCarrinho));
+            }
+        }
 
         /// <summary>
         /// POST do Checkout — cria Encomenda + Detalhes e limpa o carrinho.

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OhLivrosApp.Constantes;
 using OhLivrosApp.Data;
 using OhLivrosApp.Models;
+using OhLivrosApp.Models.DTO;
 using System.Security.Claims;
 
 namespace OhLivrosApp.Repositorios
@@ -226,6 +227,34 @@ namespace OhLivrosApp.Repositorios
             }
         }
 
+        public async Task<CheckoutModelDTO> PrepararCheckoutAsync()
+        {
+            var utilizadorId = await GetUserIdAsync();
+            if (utilizadorId == 0) throw new UnauthorizedAccessException("Utilizador não autenticado");
+
+            var u = await _context.Utilizadores.AsNoTracking()
+                     .FirstOrDefaultAsync(x => x.Id == utilizadorId)
+                     ?? throw new InvalidOperationException("Utilizador não encontrado");
+
+            var carrinho = await GetCarrinho(utilizadorId)
+                         ?? throw new InvalidOperationException("Carrinho inválido");
+
+            var itens = await _context.DetalhesCarrinhos
+                .Where(d => d.CarrinhoFK == carrinho.Id)
+                .Include(d => d.Livro).ThenInclude(l => l.Genero)
+                .AsNoTracking()
+                .Select(d => new ResumoCarrinhoItem
+                {
+                    Titulo = d.Livro.Titulo,
+                    Quantidade = d.Quantidade,
+                    PrecoUnitario = d.PrecoUnitario
+                })
+                .ToListAsync();
+
+            if (itens.Count == 0) throw new InvalidOperationException("O carrinho está vazio");
+
+            return new CheckoutModelDTO { Utilizador = u, Itens = itens };
+        }
         /// <summary>
         /// Faz a ponte entre Identity (GUID string) e Utilizador (int).
         /// Procura em Utilizadores.UserName o Id do IdentityUser.
