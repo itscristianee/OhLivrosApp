@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OhLivrosApp;
 using OhLivrosApp.Data;
+using OhLivrosApp.Data.Seed;
 using OhLivrosApp.Repositorios;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,8 @@ else
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+app.UseItToSeedSqlServer();
+
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseRouting();
