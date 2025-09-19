@@ -1,94 +1,121 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OhLivrosApp;
 using OhLivrosApp.Data;
 using OhLivrosApp.Data.Seed;
 using OhLivrosApp.Repositorios;
 using OhLivrosApp.Servicos;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ============================
+// DB
+// ============================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()           
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddControllersWithViews();
-builder.Services.AddHttpContextAccessor();
+// ============================
+// Identity + Roles (Cookies por defeito)
+// ============================
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = true; // ajusta se quiseres false em dev
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
-//para permitir injeção de dependência nos controladores.
+// ============================
+// MVC (Views + Razor) e API (Controllers)
+// ============================
+builder.Services.AddControllersWithViews();
+
+builder.Services.AddControllers() // para a API
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
+// ============================
+// DI dos repositórios/serviços
+// ============================
 builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
 builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
-builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>(); 
-builder.Services.AddScoped<IStockRepositorio, StockRepositorio>(); 
+builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>();
+builder.Services.AddScoped<IStockRepositorio, StockRepositorio>();
 builder.Services.AddScoped<ILivroRepositorio, LivroRepositorio>();
 builder.Services.AddScoped<IGeneroRepositorio, GeneroRepositorio>();
+builder.Services.AddTransient<IFicheiroServico, FicheiroServico>(); // <- resolve o serviço de ficheiros
 
-builder.Services.AddTransient<IFicheiroServico, FicheiroServico>();
-
-// configurar o de uso de 'cookies'
-builder.Services.AddSession(options => {
-    options.IdleTimeout = TimeSpan.FromSeconds(60);
+// ============================
+// Session + Cache
+// ============================
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(20);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
-builder.Services.AddDistributedMemoryCache();
 
+// ============================
+// CORS (se expores a API a um SPA)
+// ============================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SpaWithCookies", policy =>
+    {
+        policy
+            .WithOrigins("https://localhost:5173", "http://localhost:5173") // ajusta conforme o teu SPA
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
+// ============================
+// JWT (Bearer) – sem mexer nos cookies do Identity
+// ============================
+var jwt = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
-// *******************************************************************
-// Instalar o package
-// Microsoft.AspNetCore.Authentication.JwtBearer
-//
-// using Microsoft.IdentityModel.Tokens;
-// *******************************************************************
-// JWT Settings
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+builder.Services.AddAuthentication() // mantém o esquema de cookies do Identity como default
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwt["Issuer"],
+            ValidAudience = jwt["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
-builder.Services.AddAuthentication(options => { })
-   .AddCookie("Cookies", options => {
-       options.LoginPath = "/Identity/Account/Login";
-       options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-   })
-   .AddJwtBearer("Bearer", options => {
-       options.TokenValidationParameters = new TokenValidationParameters
-       {
-           ValidateIssuer = true,
-           ValidateAudience = true,
-           ValidateLifetime = true,
-           ValidateIssuerSigningKey = true,
-           ValidIssuer = jwtSettings["Issuer"],
-           ValidAudience = jwtSettings["Audience"],
-           IssuerSigningKey = new SymmetricSecurityKey(key)
-       };
-   });
-
-
-// configuração do JWT
 builder.Services.AddScoped<TokenService>();
 
-
-
-
-// Eliminar a proteção de 'ciclos' qd se faz uma pesquisa que envolva um relacionamento 1-N em Linq
-// https://code-maze.com/aspnetcore-handling-circular-references-when-working-with-json/
-// https://marcionizzola.medium.com/como-resolver-jsonexception-a-possible-object-cycle-was-detected-27e830ea78e5
-builder.Services.AddControllers()
-                .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-
-
+// ============================
+// Swagger (opcional mas útil para testar a API)
+// ============================
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ============================
+// Pipeline HTTP
+// ============================
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -96,27 +123,33 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+// Seed DB/roles/users
 app.UseItToSeedSqlServer();
 
-app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
 app.UseRouting();
-app.UseCookiePolicy();
-app.UseAuthentication();
-app.UseAuthorization();
+
 app.UseCors("SpaWithCookies");
 
-app.MapStaticAssets();
+app.UseCookiePolicy();
+app.UseSession();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+// *** IMPORTANTE para a API ***
+app.MapControllers(); // sem isto, /api/* devolve 404
+
+// MVC (UI)
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages();
 
 app.Run();
