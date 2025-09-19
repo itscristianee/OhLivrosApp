@@ -7,38 +7,44 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OhLivrosApp;
 using OhLivrosApp.Data;
-using OhLivrosApp.Data.Seed; // UseItToSeedSqlServer()
+using OhLivrosApp.Data.Seed;
 using OhLivrosApp.Repositorios;
 using OhLivrosApp.Servicos;
-using System.Reflection; // IncludeXmlComments
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================
-// DB
+// DB (com retries p/ Azure SQL)
 // ============================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sql =>
+    {
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+    }));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ============================
-// Identity + Roles (cookies por defeito)
+// Identity + Roles
 // ============================
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = true; // em dev, podes pôr false
+    options.SignIn.RequireConfirmedAccount = true; // em dev pode ser false
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // ============================
-// MVC (Views + Razor) e API (Controllers) + JSON
+// MVC + JSON
 // ============================
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o =>
@@ -46,10 +52,10 @@ builder.Services.AddControllersWithViews()
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
-builder.Services.AddRazorPages(); // necessário se usas UI do Identity
+builder.Services.AddRazorPages();
 
 // ============================
-// DI dos repositórios/serviços
+// DI
 // ============================
 builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
 builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
@@ -61,7 +67,7 @@ builder.Services.AddTransient<IFicheiroServico, FicheiroServico>();
 builder.Services.AddScoped<TokenService>();
 
 // ============================
-// Cache + Session (uma vez só)
+// Cache + Session
 // ============================
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -72,20 +78,29 @@ builder.Services.AddSession(options =>
 });
 
 // ============================
-// CORS (SPA local e Render)
+// CORS
 // ============================
+// Troque as URLs abaixo pelas REAIS do seu front
+var allowedOrigins = new[]
+{
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "https://ohlivrosapp.onrender.com",        // Front no Render (exemplo)
+    "https://SEU-FRONT.azurerestaticapps.net"  // Front no Azure Static Apps (exemplo)
+};
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("SpaWithCookies", policy =>
-    {
-        policy.WithOrigins(
-                "https://localhost:5173",
-                "http://localhost:5173",
-                "https://ohlivrosapp.onrender.com")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
+    options.AddPolicy("SpaWithCookies", p =>
+        p.WithOrigins(allowedOrigins)
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials());
+
+    options.AddPolicy("ProdCors", p =>
+        p.WithOrigins(allowedOrigins)
+         .AllowAnyHeader()
+         .AllowAnyMethod());
 });
 
 // (Render) confiar nos cabeçalhos do proxy
@@ -102,7 +117,7 @@ var keyString = jwtSection.GetValue<string>("Key")
                ?? throw new InvalidOperationException("Jwt:Key não definido.");
 var keyBytes = Encoding.UTF8.GetBytes(keyString);
 
-builder.Services.AddAuthentication() // cookie do Identity continua como default
+builder.Services.AddAuthentication() // cookie do Identity fica default
     .AddJwtBearer("Bearer", options =>
     {
         options.RequireHttpsMetadata = true;
@@ -123,23 +138,20 @@ builder.Services.AddAuthentication() // cookie do Identity continua como default
 builder.Services.AddAuthorization();
 
 // ============================
-// Swagger (com XML docs)
+// Swagger
 // ============================
+builder.Services.AddEndpointsApiExplorer(); // ajuda o publish do VS
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "OhLivros API",
-        Version = "v1",
-        Description = "API para gestão de géneros, livros e utilizadores"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "OhLivrosApp API", Version = "v1" });
 
-    // XML de comentários – só inclui se existir
+    // XML comments (se o projeto gerar o .xml em Build)
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
         c.IncludeXmlComments(xmlPath);
 });
+
 // SignalR
 builder.Services.AddSignalR();
 
@@ -148,22 +160,22 @@ var app = builder.Build();
 // ============================
 // Pipeline HTTP
 // ============================
-app.UseForwardedHeaders(); // antes de auth/redirecionamentos
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
 }
 
-// Swagger (ativo também em produção para o Publish do VS)
-app.UseSwagger();
-app.UseSwaggerUI(opt =>
+// Swagger (permitir em prod se Swagger:Enabled = true)
+var enableSwagger = builder.Configuration.GetValue<bool>("Swagger:Enabled");
+if (app.Environment.IsDevelopment() || enableSwagger)
 {
-    opt.SwaggerEndpoint("/swagger/v1/swagger.json", "OhLivros API v1");
-    opt.RoutePrefix = "swagger"; // /swagger
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "OhLivros API v1"));
+}
 
-// app.UseHttpsRedirection(); // se no Render der loop, deixa comentado
+// app.UseHttpsRedirection(); // habilite se o host lidar bem com HTTPS
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -176,7 +188,7 @@ app.UseAuthorization();
 app.UseSession();
 
 // ============================
-// DB: aplicar migrações + seed (UMA vez, controlado por flag)
+// DB: migrar + seed (controlado por flag)
 // ============================
 var skipMigrations = app.Configuration.GetValue<bool>("SkipMigrationsOnStartup")
                      || Environment.GetEnvironmentVariable("SKIP_MIGRATIONS") == "1";
@@ -187,7 +199,6 @@ if (!skipMigrations)
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 
-    // Seed (a tua extensão)
     app.UseItToSeedSqlServer();
 }
 
@@ -202,7 +213,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 
-// Hubs (SignalR) — ajusta o namespace se o teu LojaHub estiver noutro
+// Ajuste o namespace do seu Hub, se for diferente
 app.MapHub<LojaHub>("/hubs/loja");
 
 app.Run();
