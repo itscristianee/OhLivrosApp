@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using OhLivrosApp.Constantes;
 using OhLivrosApp.Data;
 using OhLivrosApp.Models;
 using System;
@@ -156,6 +157,9 @@ namespace OhLivrosApp.Areas.Identity.Pages.Account
             {
                 // PONTE CORRETA: guarda o Id do Identity no teu Utilizador
                 Input.Utilizador.UserName = user.Id;
+
+                // todos os novos registos ficam com o perfil "Utilizador"
+                await _userManager.AddToRoleAsync(user, nameof(Perfis.Utilizador));
 
                 _context.Add(Input.Utilizador);
                 await _context.SaveChangesAsync();

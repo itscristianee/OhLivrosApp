@@ -8,7 +8,7 @@ using OhLivrosApp.Models.DTO;
 
 namespace OhLivrosApp.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = nameof(Perfis.Administrador))]
 public class EncomendasAdminController : Controller
 {
     private readonly IEncUtilizadorRepositorio _repo;
