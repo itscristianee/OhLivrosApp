@@ -1,66 +1,48 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using OhLivrosApp;
 using OhLivrosApp.Data;
 using OhLivrosApp.Data.Seed;
 using OhLivrosApp.Repositorios;
 using OhLivrosApp.Servicos;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ============================
+// DB
+// ============================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()           
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddControllersWithViews();
-builder.Services.AddHttpContextAccessor();
-
-//para permitir injeção de dependência nos controladores.
-builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
-builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
-builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>(); 
-builder.Services.AddScoped<IStockRepositorio, StockRepositorio>(); 
-builder.Services.AddScoped<ILivroRepositorio, LivroRepositorio>();
-builder.Services.AddScoped<IGeneroRepositorio, GeneroRepositorio>();
-
-builder.Services.AddTransient<IFicheiroServico, FicheiroServico>();
-
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// ============================
+// Identity + Roles (cookies por defeito)
+// ============================
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    app.UseMigrationsEndPoint();
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-app.UseItToSeedSqlServer();
+    options.SignIn.RequireConfirmedAccount = true; // pode pôr false em dev
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
-app.UseStaticFiles();
-app.UseHttpsRedirection();
-app.UseRouting();
+// ============================
+// MVC (Views + Razor) e API (Controllers) + JSON
+// ============================
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
-app.MapRazorPages()
-   .WithStaticAssets();
-
-app.Run();
+// ============================
+// DI dos repositórios/serviços
