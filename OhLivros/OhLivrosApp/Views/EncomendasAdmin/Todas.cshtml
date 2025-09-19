@@ -52,11 +52,18 @@
                     <td class="text-end">@total.ToString("C", cultura)</td>
                     <td class="text-nowrap">
                         <button type="button"
-                                class="btn btn-primary"
-                                data-bs-toggle="modal"
-                                data-bs-target="#modal-@enc.Id">
-                            Detalhes
-                        </button>
+                                    class="btn btn-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modal-@enc.Id">
+                                Detalhes
+                            </button>
+
+                            @await Html.PartialAsync(
+                                "/Views/EncomendasAdmin/_DetalheEncomendaModal.cshtml",
+                                new OhLivrosApp.Models.DTOs.DetalheEncomendaModalDTO {
+                                    IdDiv = enc.Id.ToString(),
+                                    Detalhes = enc.DetalhesEncomenda
+    })
 
                         <a asp-controller="EncomendasAdmin"
                            asp-action="AtualizarEstado"

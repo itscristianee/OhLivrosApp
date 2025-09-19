@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace OhLivrosApp.Models.DTOs
+namespace OhLivrosApp.Models.DTO
 {
     public class StockDTO
     {

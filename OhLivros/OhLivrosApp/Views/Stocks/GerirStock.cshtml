@@ -1,0 +1,24 @@
+﻿@using OhLivrosApp.Models.DTO
+@model StockDTO
+@{
+    ViewBag.Title = "Gerir Stock";
+}
+
+<div style="width:50%">
+    <h2>Gerir Stock</h2>
+    <a asp-action="Index" asp-controller="Stock" class="btn btn-secondary">Voltar</a>
+
+    <form asp-action="GerirStock">
+        <input type="hidden" asp-for="LivroFK" />
+
+        <div class="my-2">
+            <label for="Quantidade">Quantidade</label>
+            <input type="number" class="form-control" asp-for="Quantidade" />
+            <span asp-validation-for="Quantidade" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <button type="submit" class="btn btn-info">Atualizar</button>
+        </div>
+    </form>
+</div>
