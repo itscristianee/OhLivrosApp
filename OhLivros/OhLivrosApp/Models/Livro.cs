@@ -42,6 +42,8 @@ namespace OhLivrosApp.Models
         [Display(Name = "Preço")]
         public decimal Preco { get; set; }
 
+        public int? Quantidade { get; set; }
+
         // 1:1 
         public Stock Stock { get; set; }
 

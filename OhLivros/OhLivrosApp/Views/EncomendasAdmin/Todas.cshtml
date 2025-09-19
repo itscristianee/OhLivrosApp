@@ -3,7 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Reflection
 @using OhLivrosApp.Constantes
-@using OhLivrosApp.Models.DTOs
+@using OhLivrosApp.Models.DTO
 
 @{
     ViewData["Title"] = "Encomendas";
@@ -51,19 +51,20 @@
                     <td>@Nome(enc.Estado)</td>
                     <td class="text-end">@total.ToString("C", cultura)</td>
                     <td class="text-nowrap">
-                        <button type="button"
-                                    class="btn btn-primary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modal-@enc.Id">
-                                Detalhes
-                            </button>
+                       <button type="button"
+                                class="btn btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-@enc.Id">
+                            Detalhes
+                        </button>
 
-                            @await Html.PartialAsync(
-                                "/Views/EncomendasAdmin/_DetalheEncomendaModal.cshtml",
-                                new OhLivrosApp.Models.DTOs.DetalheEncomendaModalDTO {
-                                    IdDiv = enc.Id.ToString(),
-                                    Detalhes = enc.DetalhesEncomenda
-    })
+                        @await Html.PartialAsync(
+                            "_DetalheEncomendaModal",
+                            new OhLivrosApp.Models.DTO.DetalheEncomendaModalDTO {
+                                IdDiv = $"modal-{enc.Id}",               // casa com data-bs-target
+                                Detalhes = enc.DetalhesEncomenda
+                            }
+                        )
 
                         <a asp-controller="EncomendasAdmin"
                            asp-action="AtualizarEstado"

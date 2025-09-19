@@ -120,7 +120,7 @@ namespace OhLivrosApp.Repositorios
 
         /// <summary>
         /// Devolve o carrinho completo do utilizador autenticado,
-        /// incluindo detalhes → livros → género.
+        /// incluindo detalhes → livros → género → stock e detalhes de encomenda.
         /// </summary>
         public async Task<Carrinho?> GetCarrinhoUtilizador()
         {
@@ -128,12 +128,19 @@ namespace OhLivrosApp.Repositorios
             if (utilizadorId == 0) return null;
 
             return await _context.Carrinhos
-                            .Include(c => c.DetalhesCarrinho)
-                                .ThenInclude(dc => dc.Livro)
-                                    .ThenInclude(l => l.Genero)
-                            .AsNoTracking()
-                            .FirstOrDefaultAsync(c => c.DonoFK == utilizadorId);
+                .Include(c => c.DetalhesCarrinho)
+                    .ThenInclude(dc => dc.Livro)
+                        .ThenInclude(l => l.Genero)
+                .Include(c => c.DetalhesCarrinho)
+                    .ThenInclude(dc => dc.Livro)
+                        .ThenInclude(l => l.Stock)
+                .Include(c => c.DetalhesCarrinho)
+                    .ThenInclude(dc => dc.Livro)
+                        .ThenInclude(l => l.DetalhesEncomenda)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.DonoFK == utilizadorId);
         }
+
 
         /// <summary>
         /// Obtém carrinho pelo DonoFK.
@@ -203,15 +210,30 @@ namespace OhLivrosApp.Repositorios
                 // 4. Criar detalhes da encomenda (linhas)
                 foreach (var item in itens)
                 {
+                    // -- Validar e atualizar stock --
+                    var stock = await _context.Stocks
+                                              .FirstOrDefaultAsync(s => s.LivroFK == item.LivroFK);
+
+                    if (stock == null)
+                        throw new InvalidOperationException("Stock inexistente para o livro selecionado.");
+
+                    if (item.Quantidade > stock.Quantidade)
+                        throw new InvalidOperationException(
+                            $"Só existem {stock.Quantidade} unidade(s) em stock para o livro {item.LivroFK}."
+                        );
+
+                    stock.Quantidade -= item.Quantidade;
+
+                    // -- Criar detalhe da encomenda --
                     await _context.DetalhesEncomendas.AddAsync(new DetalheEncomenda
                     {
                         LivroFK = item.LivroFK,
-                        EncomendaFK = encomenda.Id,
+                        Encomenda = encomenda,
                         Quantidade = item.Quantidade,
-                        PrecoUnitario = item.PrecoUnitario,
-                        Encomenda = encomenda
+                        PrecoUnitario = item.PrecoUnitario
                     });
                 }
+
 
                 // 5. Limpar carrinho (remover itens)
                 _context.DetalhesCarrinhos.RemoveRange(itens);

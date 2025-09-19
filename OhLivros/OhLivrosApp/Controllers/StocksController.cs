@@ -7,11 +7,11 @@ using OhLivrosApp.Repositorios;
 namespace OhLivrosApp.Controllers
 {
     [Authorize(Roles = nameof(Perfis.Administrador))]
-    public class StockController : Controller
+    public class StocksController : Controller
     {
         private readonly IStockRepositorio _stockRepo;
 
-        public StockController(IStockRepositorio stockRepo)
+        public StocksController(IStockRepositorio stockRepo)
         {
             _stockRepo = stockRepo;
         }

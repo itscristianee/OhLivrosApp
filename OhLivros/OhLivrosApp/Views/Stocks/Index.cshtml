@@ -1,14 +1,14 @@
 ﻿@using OhLivrosApp.Models.DTO
 @model IEnumerable<StockListagemDTO>
 @{
-    ViewBag.Title = "Gestão de Stocks";
+    ViewBag.Title = "Stocks";
 }
-<h2>Gestão de Stocks</h2>
+<h2>Stocks</h2>
 
 <form asp-action="Index" method="get" class="my-2 d-flex gap-2">
     <input type="text" name="termo" class="form-control w-25" placeholder="Pesquisar por livro" />
     <button type="submit" class="btn btn-primary">Pesquisar</button>
-    <a asp-action="Index" asp-controller="Stock" class="btn btn-secondary">Limpar</a>
+    <a href="/Stocks/Index" class="btn btn-dark">Limpar</a>
 </form>
 
 <table class="table table-bordered">
@@ -23,7 +23,7 @@
             <td>@item.TituloLivro</td>
             <td>@item.Quantidade</td>
             <td>
-                <a asp-action="GerirStock" asp-controller="Stock" asp-route-livroId="@item.LivroFK" class="btn btn-info">
+                <a asp-action="GerirStock" asp-controller="Stocks" asp-route-livroId="@item.LivroFK" class="btn btn-info">
                     Atualizar Stock
                 </a>
             </td>

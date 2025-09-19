@@ -42,14 +42,22 @@
                         <td>@item.Quantidade</td>
                         <td>@( (item.PrecoUnitario * item.Quantidade).ToString("C", cultura) )</td>
                         <td>
-                            <!-- aumentar quantidade -->
-                            <a class="btn btn-sm btn-outline-primary me-1"
-                               href="/Carrinhos/AdicionarItem?livroId=@item.LivroFK&redirect=1">+</a>
+                            @* Aumentar quantidade - só aparece se houver stock suficiente *@
+                            @if (item.Quantidade < item.Livro.Stock.Quantidade)
+                            {
+                                <a class="btn btn-sm btn-outline-primary me-1"
+                                   href="/Carrinhos/AdicionarItem?livroId=@item.LivroFK&redirect=1">+</a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger me-1">Sem stock</span>
+                            }
 
-                            <!-- diminuir quantidade (se chegar a 0, remove a linha) -->
+                            @* Diminuir quantidade (se chegar a 0, remove a linha) *@
                             <a class="btn btn-sm btn-outline-secondary"
                                href="/Carrinhos/RemoverItem?livroId=@item.LivroFK">-</a>
                         </td>
+
                     </tr>
                 }
             </tbody>
