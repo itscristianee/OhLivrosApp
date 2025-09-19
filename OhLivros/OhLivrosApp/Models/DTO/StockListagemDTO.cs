@@ -1,4 +1,4 @@
-﻿namespace OhLivrosApp.Models.DTOs
+﻿namespace OhLivrosApp.Models.DTO
 {
     public class StockListagemDTO
     {

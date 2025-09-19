@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace OhLivrosApp.Models.DTOs
+namespace OhLivrosApp.Models.DTO
 {
     public class DetalheEncomendaModalDTO
     {

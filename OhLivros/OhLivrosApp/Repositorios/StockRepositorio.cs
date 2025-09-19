@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OhLivrosApp.Data;
 using OhLivrosApp.Models;
-using OhLivrosApp.Models.DTOs;
+using OhLivrosApp.Models.DTO;
 
 namespace OhLivrosApp.Repositorios
 {

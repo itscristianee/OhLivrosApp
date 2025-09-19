@@ -52,7 +52,19 @@
                     <b>Autor:</b> @l.Autor <br />
                     <b>Preço:</b> @l.Preco.ToString("C")
                 </p>
-                <button type="button" onclick="add(@l.Id)" class="btn btn-primary">Adicionar ao carrinho</button>
+                @if (l.Quantidade > 0)
+                {
+                    <button type="button" onclick="add(@l.Id)" class="btn btn-primary">
+                        Adicionar ao Carrinho
+                    </button>
+                }
+                else
+                {
+                    <span style="border: 1px solid; padding: 5px 8px; color: red; border-radius: 5px;">
+                        Sem stock
+                    </span>
+                }
+
             </div>
         </div>
     }
@@ -62,77 +74,6 @@
     }
 </div>
 
-
-@* @section Scripts {
-    <script>
-        async function add(livroId) {
-            // verifica se está autenticado
-            var usernameEl = document.getElementById("username");
-            if (usernameEl == null || usernameEl.innerText.trim().length === 0) {
-                window.location.href = "/Identity/Account/Login";
-                return;
-            }
-
-            try {
-                // chama a action do CarrinhosController
-                var response = await fetch(`/Carrinhos/AdicionarItem?livroId=${livroId}`);
-
-                if (response.ok) {
-                    // devolve número total de itens no carrinho
-                    var total = await response.json();
-
-                    // atualiza badge da navbar
-                    var cartCountEl = document.getElementById("totalCar");
-                    if (cartCountEl) {
-                        cartCountEl.textContent = total;
-                    }
-
-                    // efeito: dá scroll até ao badge
-                    cartCountEl.scrollIntoView({ behavior: "smooth" });
-                }
-                else if (response.status === 401 || response.redirected) {
-                    // não autenticado → login
-                    window.location.href = "/Identity/Account/Login";
-                }
-            }
-            catch (err) {
-                console.error("Erro ao adicionar item:", err);
-            }
-        }
-    </script>
-} *@
-
-@* @section Scripts {
-    <script>
-        async function add(livroId) {
-             var usernameEl = document.getElementById("username");
-             console.log(usernameEl);
-             var userGuid = usernameEl ? usernameEl.innerText.trim() : "";
-
-        if (!userGuid) {
-           window.location.href = "/Identity/Account/Login";
-          //var username=usernameEl.innerText;
-          //  if(username.length<1){
-          //      window.location.href="/Identity/Account/Login";
-          //  }
-        }
-            try {
-                var resposta = await fetch(`/Carrinhos/AdicionarItem?livroId=${livroId}`);
-                if (resposta.status == 200) {
-                    var result = await resposta.json();
-                    var carTotEl = document.getElementById("totalCar");
-                    carTotEl.innerHTML = result;
-                    window.location.href = "#totalCar";
-                }
-            }
-            catch (err) {
-                console.log(err);
-            }
-        }
-    </script>
-}
-
- *@
 
 @section Scripts {
     <script>
