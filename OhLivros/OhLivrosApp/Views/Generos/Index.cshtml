@@ -1,0 +1,43 @@
+﻿@model IEnumerable<Genero>
+@{
+    ViewBag.Title = "Géneros";
+}
+
+<h2>Géneros</h2>
+
+<a asp-action="Criar" asp-controller="Generos" class="btn btn-primary mb-2">
+    Adicionar Novo
+</a>
+
+<table class="table table-striped my-2">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var genero in Model)
+        {
+            <tr>
+                <td>@genero.Nome</td>
+                <td>
+                    <a asp-action="Editar"
+                       asp-controller="Generos"
+                       asp-route-id="@genero.Id"
+                       class="btn btn-sm btn-warning me-1">
+                        Editar
+                    </a>
+                    <form asp-action="Eliminar"
+                          asp-controller="Generos"
+                          asp-route-id="@genero.Id"
+                          method="post"
+                          class="d-inline"
+                          onsubmit="return confirm('Tem a certeza que deseja eliminar este género?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
