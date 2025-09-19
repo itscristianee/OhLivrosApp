@@ -1,7 +1,125 @@
-﻿
+﻿@model IEnumerable<OhLivrosApp.Models.Encomenda>
+@using System.Globalization
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using OhLivrosApp.Constantes
+
 @{
-    ViewData["Title"] = "Todas";
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Encomendas";
+
+    var cultura = new CultureInfo("pt-PT");
+
+    string DisplayName(Enum v)
+    {
+        var m = v.GetType().GetMember(v.ToString()).First();
+        var attr = m.GetCustomAttribute<DisplayAttribute>();
+        return attr?.GetName() ?? v.ToString();
+    }
 }
 
-<h1>Todas</h1>
+<div style="width:100%" class="mt-2">
+    <h4>Encomendas</h4>
 
+    @if (Model != null && Model.Any())
+    {
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Contacto</th>
+                    <th>Morada</th>
+                    <th>Pagamento</th>
+                    <th>Estado</th>
+                    <th class="text-end">Total</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var enc in Model)
+                {
+                    var total = enc.DetalhesEncomenda?.Sum(x => x.PrecoUnitario * x.Quantidade) ?? 0m;
+                    <tr>
+                        <td>@enc.Id</td>
+                        <td>@enc.DataCriacao.ToLocalTime().ToString("dd-MM-yyyy")</td>
+                        <td>@enc.Comprador?.Nome</td>
+                        <td>@enc.Comprador?.Telemovel</td>
+                        <td>@($"{enc.Comprador?.Morada}, {enc.Comprador?.CodPostal} {enc.Comprador?.Pais}")</td>
+                        <td>@DisplayName(enc.MetodoPagamento) | @(enc.Pago ? "Pago" : "Não Pago")</td>
+                        <td>@enc.Estado</td>
+                        <td class="text-end">@total.ToString("C", cultura)</td>
+                        <td class="text-nowrap">
+                            <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#det-@enc.Id">
+                                Detalhes
+                            </button>
+
+                            <!-- mapeia para as tuas actions de admin -->
+                            <a asp-controller="AdminOperations"
+                               asp-action="UpdateOrderStatus"
+                               asp-route-orderId="@enc.Id"
+                               class="btn btn-sm btn-outline-info">
+                                Alterar Estado
+                            </a>
+
+                            <a asp-controller="AdminOperations"
+                               asp-action="TogglePaymentStatus"
+                               asp-route-orderId="@enc.Id"
+                               class="btn btn-sm btn-outline-secondary">
+                                Alternar Pagamento
+                            </a>
+                        </td>
+                    </tr>
+
+                    if (enc.DetalhesEncomenda != null && enc.DetalhesEncomenda.Count > 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="p-0">
+                                <div class="collapse" id="det-@enc.Id">
+                                    <table class="table table-sm table-striped mb-0 align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Livro</th>
+                                                <th>Género</th>
+                                                <th class="text-end">Preço</th>
+                                                <th class="text-end">Qtd</th>
+                                                <th class="text-end">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var d in enc.DetalhesEncomenda)
+                                            {
+                                                var sub = d.PrecoUnitario * d.Quantidade;
+                                                <tr>
+                                                    <td>@d.Livro?.Titulo</td>
+                                                    <td>@d.Livro?.Genero?.Nome</td>
+                                                    <td class="text-end">@d.PrecoUnitario.ToString("C", cultura)</td>
+                                                    <td class="text-end">@d.Quantidade</td>
+                                                    <td class="text-end">@sub.ToString("C", cultura)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="4" class="text-end">Total</th>
+                                                <th class="text-end">@total.ToString("C", cultura)</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <h5>Sem encomendas</h5>
+    }
+</div>
