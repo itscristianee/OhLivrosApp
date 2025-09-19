@@ -1,0 +1,24 @@
+﻿@using OhLivrosApp.Models.DTO
+@model GeneroDTO
+@{
+    ViewBag.Title = "Editar Género";
+}
+
+<div style="width:50%">
+    <h2>Editar Género</h2>
+    <a asp-action="Index" asp-controller="Generos" class="btn btn-secondary">Voltar</a>
+
+    <form asp-action="Editar">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="my-2">
+            <label asp-for="Nome" class="form-label">Nome</label>
+            <input type="text" class="form-control" asp-for="Nome" />
+            <span asp-validation-for="Nome" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <button type="submit" class="btn btn-warning">Atualizar</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,64 @@
+﻿@model IEnumerable<Livro>
+@{
+    ViewBag.Title = "Livros";
+}
+
+<h2>Livros</h2>
+
+<a asp-action="Criar" asp-controller="Livros" class="btn btn-primary mb-2">Adicionar Novo</a>
+
+@if (Model?.Any() == true)
+{
+    <table class="table table-striped my-2">
+        <thead>
+            <tr>
+                <th>Imagem</th>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Género</th>
+                <th>Preço</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var livro in Model)
+            {
+                <tr>
+                    <td>
+                        @if (string.IsNullOrWhiteSpace(livro.Imagem))
+                        {
+                            <img src="~/imagens/sem-capa.png" style="width:80px;height:100px" alt="Imagem do livro" />
+                        }
+                        else
+                        {
+                            <img src="~/imagens/@livro.Imagem" style="width:80px;height:100px" alt="Imagem do livro" />
+                        }
+                    </td>
+                    <td>@livro.Titulo</td>
+                    <td>@livro.Autor</td>
+                    <td>@livro.Genero?.Nome</td>
+                    <td>@string.Format(new System.Globalization.CultureInfo("pt-PT"), "{0:C}", livro.Preco)</td>
+                    <td>
+                        <a asp-action="Editar"
+                           asp-controller="Livros"
+                           asp-route-id="@livro.Id"
+                           class="btn btn-sm btn-warning me-1">Editar</a>
+
+                        <form asp-action="Eliminar"
+                              asp-controller="Livros"
+                              asp-route-id="@livro.Id"
+                              method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Tem a certeza que deseja eliminar este livro?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <h3>Sem registos</h3>
+}

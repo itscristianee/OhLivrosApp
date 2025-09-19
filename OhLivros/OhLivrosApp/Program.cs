@@ -4,6 +4,7 @@ using OhLivrosApp;
 using OhLivrosApp.Data;
 using OhLivrosApp.Data.Seed;
 using OhLivrosApp.Repositorios;
+using OhLivrosApp.Servicos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IHomeRepositorio, HomeRepositorio>();
 builder.Services.AddTransient<ICarrinhoRepositorio, CarrinhoRepositorio>();
 builder.Services.AddTransient<IEncUtilizadorRepositorio, EncUtilizadorRepositorio>(); 
-builder.Services.AddScoped<IStockRepositorio, StockRepositorio>();
+builder.Services.AddScoped<IStockRepositorio, StockRepositorio>(); 
+builder.Services.AddScoped<ILivroRepositorio, LivroRepositorio>();
+builder.Services.AddScoped<IGeneroRepositorio, GeneroRepositorio>();
+
+builder.Services.AddTransient<IFicheiroServico, FicheiroServico>();
 
 
 var app = builder.Build();

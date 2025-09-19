@@ -1,0 +1,56 @@
+﻿@using OhLivrosApp.Models.DTO
+@model LivroDTO
+@{
+    ViewBag.Title = "Editar Livro";
+}
+<div style="width:50%">
+    <h2>Editar Livro</h2>
+    <a asp-action="Index" asp-controller="Livros" class="btn btn-primary">Voltar</a>
+
+    <form asp-action="Editar" asp-controller="Livros" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Imagem" />
+
+        <div class="my-2">
+            <label for="Titulo">Título*</label>
+            <input type="text" class="form-control" asp-for="Titulo" />
+            <span asp-validation-for="Titulo" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <label for="Autor">Autor*</label>
+            <input type="text" class="form-control" asp-for="Autor" />
+            <span asp-validation-for="Autor" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <label for="GeneroFK">Género*</label>
+            <select class="form-control" asp-for="GeneroFK" asp-items="Model.Generos">
+                <option value="">Selecione um género</option>
+            </select>
+            <span asp-validation-for="GeneroFK" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <label for="Preco">Preço*</label>
+            <input type="number" step="0.01" class="form-control" asp-for="Preco" />
+            <span asp-validation-for="Preco" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <label>Imagem</label>
+            @if (!string.IsNullOrEmpty(Model.Imagem))
+            {
+                <img src="~/images/@Model.Imagem" style="width:100px;height:80px" alt="Imagem atual do livro" />
+            }
+            <input type="file" class="form-control" asp-for="ImagemFicheiro" />
+            <span asp-validation-for="ImagemFicheiro" class="text-danger"></span>
+        </div>
+
+        <div class="my-2">
+            <button type="submit" class="btn btn-success">Guardar Alterações</button>
+        </div>
+    </form>
+</div>
