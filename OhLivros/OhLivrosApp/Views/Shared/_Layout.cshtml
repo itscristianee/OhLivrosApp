@@ -1,4 +1,5 @@
-﻿<!doctype html>
+﻿@using OhLivrosApp.Constantes
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -21,7 +22,7 @@
                             Home
                             <span class="visually-hidden">(current)</span>
                         </a>
-                    </li>
+                    </li
                     <li class="nav-item">
                         <a class="nav-link" href="/Home/Sobre">Sobre</a>
                     </li>
@@ -38,6 +39,35 @@
                 </ul>
                 <partial name="_LoginPartial" />
 
+                    @if (User.IsInRole(nameof(Perfis.Administrador)))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/AdminOperations/Dashboard">Dashboard</a>
+                        </li>
+                        @*  <li class="nav-item">
+                          <a class="nav-link" 
+                          href="/AdminOperations/AllOrders">Orders</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Stock/Index">Stock</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Genre/Index">Genre</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Book/Index">Books</a>
+                        </li> *@
+                    }
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Home/Sobre">Sobre</a>
+                    </li>
+                    
+                </ul>
+                <partial name="_LoginPartial" />
             </div>
         </div>
     </nav>
